@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use crate::cents::Cents;
 
-/// Errors arising from domain entity invariants, monetary math, and transfer validations.
+/// Errors arising from domain entity invariants, monetary math, spreadsheet DAG, and transfer validations.
 #[derive(Debug, Error, PartialEq, Eq, Clone)]
 pub enum DomainError {
     /// Monetary parsing error from string representation.
@@ -36,4 +36,16 @@ pub enum DomainError {
     /// Entity validation failure or missing mandatory fields.
     #[error("entity validation failure: {0}")]
     Validation(String),
+
+    /// A dependency cycle was detected in the spreadsheet calculation graph.
+    #[error("dependency cycle detected in calculation graph: {0}")]
+    CycleDetected(String),
+
+    /// Invalid month format string (expected YYYY-MM).
+    #[error("invalid month format: '{0}', expected YYYY-MM")]
+    InvalidMonthFormat(String),
+
+    /// Referenced cell was not found in the spreadsheet.
+    #[error("cell not found in spreadsheet: '{0}'")]
+    CellNotFound(String),
 }
