@@ -1,0 +1,20 @@
+[workspace]
+members = [
+    "crates/actual-core",
+    "crates/actual-storage",
+    "crates/actual-crypto",
+    "crates/actual-sync",
+    "crates/actual-import",
+    "crates/actual-api",
+    "crates/actual-server",
+    "crates/actual-cli",
+    "crates/actual-tui",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["rs-budget contributors"]
+repository = "https://github.com/itsvrushabh/rs-budget"

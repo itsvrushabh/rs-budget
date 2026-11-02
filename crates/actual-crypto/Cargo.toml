@@ -1,0 +1,19 @@
+[package]
+name = "actual-crypto"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+actual-core = { path = "../actual-core" }
+aes-gcm = "0.10"
+pbkdf2 = "0.12"
+sha2 = "0.10"
+base64 = "0.22"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.6", features = ["v4"] }
+
+[dev-dependencies]
+hex = "0.4"

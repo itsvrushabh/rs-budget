@@ -1,0 +1,149 @@
+{
+  "description": "Anonymized reference envelope budget fixture for rs-budget calculations and differential testing",
+  "budget_id": "b-test-fixture-001",
+  "budget_type": "envelope",
+  "currency": "USD",
+  "month": "2026-11",
+  "accounts": [
+    {
+      "id": "acct-checking-01",
+      "name": "Primary Checking",
+      "type": "checking",
+      "offbudget": 0,
+      "closed": 0,
+      "starting_balance": 500000
+    },
+    {
+      "id": "acct-savings-01",
+      "name": "Emergency Fund",
+      "type": "savings",
+      "offbudget": 0,
+      "closed": 0,
+      "starting_balance": 1000000
+    },
+    {
+      "id": "acct-cc-01",
+      "name": "Rewards Credit Card",
+      "type": "credit",
+      "offbudget": 0,
+      "closed": 0,
+      "starting_balance": -35000
+    }
+  ],
+  "category_groups": [
+    {
+      "id": "group-income",
+      "name": "Income",
+      "is_income": 1,
+      "sort_order": 1.0
+    },
+    {
+      "id": "group-bills",
+      "name": "Monthly Bills",
+      "is_income": 0,
+      "sort_order": 2.0
+    },
+    {
+      "id": "group-everyday",
+      "name": "Everyday Expenses",
+      "is_income": 0,
+      "sort_order": 3.0
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat-salary",
+      "group_id": "group-income",
+      "name": "Salary / Income",
+      "is_income": 1,
+      "budgeted": 0
+    },
+    {
+      "id": "cat-rent",
+      "group_id": "group-bills",
+      "name": "Housing / Rent",
+      "is_income": 0,
+      "budgeted": 120000
+    },
+    {
+      "id": "cat-utilities",
+      "group_id": "group-bills",
+      "name": "Utilities & Internet",
+      "is_income": 0,
+      "budgeted": 22500
+    },
+    {
+      "id": "cat-groceries",
+      "group_id": "group-everyday",
+      "name": "Groceries",
+      "is_income": 0,
+      "budgeted": 50000
+    },
+    {
+      "id": "cat-dining",
+      "group_id": "group-everyday",
+      "name": "Dining Out",
+      "is_income": 0,
+      "budgeted": 20000
+    }
+  ],
+  "transactions": [
+    {
+      "id": "txn-001",
+      "account_id": "acct-checking-01",
+      "category_id": "cat-salary",
+      "date": "2026-11-01",
+      "amount": 350000,
+      "payee": "Employer Payroll",
+      "notes": "Direct deposit",
+      "cleared": 1
+    },
+    {
+      "id": "txn-002",
+      "account_id": "acct-checking-01",
+      "category_id": "cat-rent",
+      "date": "2026-11-02",
+      "amount": -120000,
+      "payee": "Main Street Realty",
+      "notes": "November rent",
+      "cleared": 1
+    },
+    {
+      "id": "txn-003",
+      "account_id": "acct-cc-01",
+      "category_id": "cat-groceries",
+      "date": "2026-11-02",
+      "amount": -14520,
+      "payee": "Local Supermarket",
+      "notes": "Weekly groceries",
+      "cleared": 1
+    }
+  ],
+  "expected_calculations": {
+    "total_income": 350000,
+    "total_budgeted": 212500,
+    "to_budget": 137500,
+    "category_balances": {
+      "cat-rent": {
+        "budgeted": 120000,
+        "spent": -120000,
+        "balance": 0
+      },
+      "cat-utilities": {
+        "budgeted": 22500,
+        "spent": 0,
+        "balance": 22500
+      },
+      "cat-groceries": {
+        "budgeted": 50000,
+        "spent": -14520,
+        "balance": 35480
+      },
+      "cat-dining": {
+        "budgeted": 20000,
+        "spent": 0,
+        "balance": 20000
+      }
+    }
+  }
+}
