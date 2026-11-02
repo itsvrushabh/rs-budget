@@ -1,9 +1,12 @@
 [package]
 name = "actual-import"
+description = "Financial statement parsers (QIF, OFX, CSV) and transaction deduplication for rs-budget"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+homepage.workspace = true
 
 [dependencies]
-actual-core = { path = "../actual-core" }
+actual-core = { path = "../actual-core", version = "0.1.0" }
 thiserror = "1.0"

@@ -1,8 +1,11 @@
 [package]
 name = "actual-core"
+description = "Core domain models, monetary precision, reactive spreadsheet DAG, and rules engine for rs-budget"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+homepage.workspace = true
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }

@@ -1,11 +1,14 @@
 [package]
 name = "actual-api"
+description = "Typed application services, queries, and undo/redo state restoration for rs-budget"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+homepage.workspace = true
 
 [dependencies]
-actual-core = { path = "../actual-core" }
-actual-storage = { path = "../actual-storage" }
-actual-sync = { path = "../actual-sync" }
+actual-core = { path = "../actual-core", version = "0.1.0" }
+actual-storage = { path = "../actual-storage", version = "0.1.0" }
+actual-sync = { path = "../actual-sync", version = "0.1.0" }
 thiserror = "1.0"
