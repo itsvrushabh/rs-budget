@@ -20,10 +20,42 @@ The repository uses an organized branching model tailored for safety, structured
 - `chore/<task>`: Tooling, dependency bumps, or maintenance tasks.
 - `docs/<topic>`: Documentation and non-code guide updates.
 
+## Pull request submission guidelines and requirements
+
+All contributions, feature developments, bugfixes, and documentation updates must be introduced via Pull Requests. To maintain complete traceability and disciplined project management:
+
+### 1. Mandatory Issue Linking
+- **Every PR must link to a valid GitHub Issue ID** using standard closing keywords:
+  - `Closes #<issue-id>` (for completed tasks or features)
+  - `Fixes #<issue-id>` (for bugfixes)
+  - `Relates to #<issue-id>` (for partial or work-in-progress contributions)
+- PRs without an associated Issue ID will be flagged and rejected by automated CI workflows.
+- If no issue exists for the proposed change, an issue must be created first to discuss requirements and align on implementation scope before opening a PR.
+
+### 2. PR Description and Submission Checklist
+Every PR must follow the standard repository template and provide:
+- **Linked Issue:** Explicit reference (e.g., `Closes #42`).
+- **Description & Context:** Clear explanation of what was changed, why it was changed, and references to relevant upstream Actual Budget behavior.
+- **Target Branch Selection:**
+  - Feature development, bugfixes, and refactors target `dev`.
+  - Release staging merges target `release`.
+  - Production hotfixes target `main`.
+  - Planning specifications and architecture design docs target `planning`.
+  - CI workflows, build scripts, and tooling target `ci-workflow`.
+- **Quality & Verification Evidence:**
+  - `cargo fmt --check` passes cleanly.
+  - `cargo clippy --workspace --all-targets --all-features -- -D warnings` produces zero warnings.
+  - New and existing unit and integration tests pass.
+  - For data storage changes: verification of zero data loss on reference SQLite budget fixtures.
+
+### 3. Branch Protection Compliance
+- Direct commits and pushes to `main` and `release` are blocked by GitHub Rulesets. All merges must proceed through validated Pull Requests.
+
 ## Pull request checks
 
 Run required checks on pull requests and pushes to `main`:
 
+- **Issue Link Validation:** Verify the PR description contains an associated GitHub Issue ID (`#<id>`).
 - `cargo fmt --check`.
 - `cargo clippy --workspace --all-targets --all-features -- -D warnings`.
 - Workspace unit and integration tests on supported operating systems.
