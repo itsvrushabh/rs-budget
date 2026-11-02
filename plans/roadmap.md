@@ -13,10 +13,10 @@ Track each checklist item in issues or pull requests as work begins. Update this
 
 ## Phase 1 — Storage, crypto, and wire primitives
 
-- [ ] Implement `actual-storage` using `rusqlite` with WAL mode and migration runner ([#6](https://github.com/itsvrushabh/rs-budget/issues/6))
-  - [ ] Match upstream table schemas and migration versions.
-  - [ ] Validate direct opening, querying, and updating of existing upstream SQLite budget files with zero data transformation loss.
-  - [ ] Verify database transaction safety, crash recovery, and backup/restore behavior on copied test budgets.
+- [x] Implement `actual-storage` using `rusqlite` with WAL mode and migration runner ([#6](https://github.com/itsvrushabh/rs-budget/issues/6))
+  - [x] Match upstream table schemas and migration versions.
+  - [x] Validate direct opening, querying, and updating of existing upstream SQLite budget files with zero data transformation loss.
+  - [x] Verify database transaction safety, crash recovery, and backup/restore behavior on copied test budgets.
 - [ ] Port cryptographic algorithms in `actual-crypto` ([#7](https://github.com/itsvrushabh/rs-budget/issues/7))
   - [ ] Port PBKDF2 key derivation and AES-GCM encryption/decryption.
   - [ ] Add cross-implementation known-answer tests against upstream Node.js output.
