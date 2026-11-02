@@ -1,0 +1,30 @@
+name: Validate PR Requirements
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  pull-requests: read
+  contents: read
+
+jobs:
+  validate-issue-link:
+    name: Validate Issue Reference
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for Associated Issue ID
+        run: |
+          BODY="${{ github.event.pull_request.body }}"
+          TITLE="${{ github.event.pull_request.title }}"
+          COMBINED="${TITLE} ${BODY}"
+
+          # Match #123, Closes #123, Fixes #123, Relates to #123, etc.
+          if echo "$COMBINED" | grep -Ei "(close[sd]?|fix(e[sd])?|resolve[sd]?|relate[sd]?( to)?|issue)[[:space:]]*#[0-9]+" > /dev/null || echo "$COMBINED" | grep -E "#[0-9]+" > /dev/null; then
+            echo "✅ Valid associated issue reference found in PR description or title."
+            exit 0
+          else
+            echo "❌ Error: Every Pull Request must link to an associated GitHub Issue ID (e.g. 'Closes #123', 'Fixes #456', or '#789')."
+            echo "Please update the PR description to include the linked issue."
+            exit 1
+          fi
