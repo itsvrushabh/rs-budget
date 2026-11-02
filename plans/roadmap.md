@@ -35,7 +35,7 @@ Track each checklist item in issues or pull requests as work begins. Update this
 - [x] Port rules evaluation engine and recurring schedules in `actual-core` ([#11](https://github.com/itsvrushabh/rs-budget/issues/11))
   - [x] Implement rule conditions and actions evaluated during transaction creation/mutation.
   - [x] Implement recurring schedule execution and upcoming transaction generation.
-- [ ] Build differential testing harness comparing rs-budget against Node.js Actual ([#12](https://github.com/itsvrushabh/rs-budget/issues/12))
+- [x] Build differential testing harness comparing rs-budget against Node.js Actual ([#12](https://github.com/itsvrushabh/rs-budget/issues/12)) — merged PR #40
   - [ ] Run identical transaction streams through upstream Node.js Actual and Rust `actual-core`.
   - [ ] Assert identical balances, envelope numbers, and reports.
 - [ ] Expose query, mutation, and undo behavior behind typed APIs in `actual-api` ([#13](https://github.com/itsvrushabh/rs-budget/issues/13))
