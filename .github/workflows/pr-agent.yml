@@ -1,4 +1,4 @@
-name: PR Agent (Gemini)
+name: PR Agent (Gemini & OpenCode)
 
 on:
   pull_request:
@@ -7,6 +7,7 @@ on:
     types: [created]
 
 permissions:
+  id-token: write
   contents: read
   pull-requests: write
   issues: write
@@ -17,13 +18,35 @@ jobs:
     name: PR Agent Code Review
     if: ${{ github.event_name == 'pull_request' || (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/')) }}
     steps:
+      - name: Sign in to OpenCode
+        env:
+          AUDIENCE: https://opencode.ai/console
+        run: |
+          oidc=$(curl -sSf --oauth2-bearer "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUDIENCE" | jq -r .value)
+          token=$(curl -sSf https://opencode.ai/console/auth/oauth/token \
+            -d grant_type=urn:ietf:params:oauth:grant-type:token-exchange \
+            -d subject_token_type=urn:ietf:params:oauth:token-type:jwt \
+            -d client_id=sk_27245700-9bb2-4b5c-930c-eb949faf8b40 \
+            -d subject_token="$oidc" | jq -r .access_token)
+          echo "::add-mask::$token"
+          echo "OPENCODE_API_KEY=$token" >> "$GITHUB_ENV"
+          echo "OPENAI_KEY=$token" >> "$GITHUB_ENV"
+          echo "OPENAI_API_KEY=$token" >> "$GITHUB_ENV"
+
+          echo "Inspecting available OpenCode endpoints..."
+          curl -s -H "Authorization: Bearer $token" https://opencode.ai/inference/openai/v1/models || true
+
       - name: PR Agent Action
         uses: the-pr-agent/pr-agent@main
         env:
-          CONFIG.model: "gemini/gemini-1.5-flash"
-          CONFIG.fallback_models: '["gemini/gemini-1.5-pro"]'
-          CONFIG.custom_model_max_tokens: 32000
+          OPENAI_KEY: ${{ env.OPENCODE_API_KEY }}
+          OPENAI_BASE_URL: "https://opencode.ai/inference/openai/v1"
+          OPENAI.API_BASE: "https://opencode.ai/inference/openai/v1"
           GOOGLE_AI_STUDIO.GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CONFIG.model: "gemini/gemini-1.5-flash-latest"
+          CONFIG.fallback_models: '["gemini/gemini-1.5-pro-latest", "gemini/gemini-2.0-flash-exp"]'
+          CONFIG.custom_model_max_tokens: 32000
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           github_action_config.auto_review: "true"
           github_action_config.auto_describe: "true"
