@@ -48,6 +48,11 @@ impl Cents {
         Self(val)
     }
 
+    /// Constructs a `Cents` instance from major currency units (e.g. whole dollars).
+    pub fn from_major(major: i64) -> Result<Self, DomainError> {
+        Self::from_major_and_minor(major, 0)
+    }
+
     /// Constructs a `Cents` instance from whole major units (dollars) and minor units (cents).
     pub fn from_major_and_minor(major: i64, minor: i64) -> Result<Self, DomainError> {
         let total = major
