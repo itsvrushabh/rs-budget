@@ -1,13 +1,7 @@
-use serde::{Deserialize, Serialize};
+//! Re-exports of domain models.
 
-/// Monetary amount represented in fixed-point integer cents (e.g. 1000 = $10.00).
-pub type Cents = i64;
-
-/// Account entity.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Account {
-    pub id: String,
-    pub name: String,
-    pub offbudget: bool,
-    pub closed: bool,
-}
+pub use crate::account::{Account, AccountGroup};
+pub use crate::category::{Category, CategoryGroup};
+pub use crate::cents::Cents;
+pub use crate::payee::Payee;
+pub use crate::transaction::Transaction;
