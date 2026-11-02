@@ -1,15 +1,10 @@
-//! `actual-storage` handles SQLite database connections, schema migrations,
-//! and native Actual Budget file reading.
+pub mod connection;
+pub mod error;
+pub mod migrations;
 
-/// Trait defining storage operations for budgets.
-pub trait BudgetStore {
-    // Methods will be added in Phase 1
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(1 + 1, 2);
-    }
-}
+pub use connection::SqliteStore;
+pub use error::StorageError;
+pub use migrations::{
+    check_database_validity, get_applied_migrations, get_available_migrations, initialize_database,
+    migrate, patch_bad_migrations, Migration, MigrationHandler, ADDITIVE_ONLY_CUTOFF, INIT_SQL,
+};
