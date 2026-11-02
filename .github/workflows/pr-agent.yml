@@ -18,7 +18,18 @@ jobs:
     name: PR Agent Code Review
     if: ${{ github.event_name == 'pull_request' || (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/')) }}
     steps:
+      - name: Request Copilot review
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ -n "$PR_NUMBER" ]; then
+            gh pr edit "$PR_NUMBER" --add-reviewer "@copilot" 2>/dev/null || true
+          fi
+
       - name: Sign in to OpenCode
+        continue-on-error: true
         env:
           AUDIENCE: https://opencode.ai/console
         run: |
@@ -34,18 +45,19 @@ jobs:
           echo "OPENAI_KEY=$token" >> "$GITHUB_ENV"
           echo "OPENAI_API_KEY=$token" >> "$GITHUB_ENV"
 
-          echo "Inspecting available Gemini models..."
-          curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=${{ secrets.GEMINI_API_KEY }}" | jq -r '.models[].name' | head -n 30 || true
-
       - name: PR Agent Action
         uses: the-pr-agent/pr-agent@main
+        continue-on-error: true
         env:
           OPENAI_KEY: ${{ env.OPENCODE_API_KEY }}
-          OPENAI_BASE_URL: "https://opencode.ai/inference/openai/v1"
+          OPENAI.KEY: ${{ env.OPENCODE_API_KEY }}
           OPENAI.API_BASE: "https://opencode.ai/inference/openai/v1"
+          OPENAI_BASE_URL: "https://opencode.ai/inference/openai/v1"
+          OPENAI__API_BASE: "https://opencode.ai/inference/openai/v1"
+          OPENAI__KEY: ${{ env.OPENCODE_API_KEY }}
           GOOGLE_AI_STUDIO.GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          CONFIG.model: "gemini/gemini-2.5-flash"
-          CONFIG.fallback_models: '["gemini/gemini-2.5-pro", "gemini/gemini-flash-latest"]'
+          CONFIG.model: "openai/opencode/gpt-5.4-mini"
+          CONFIG.fallback_models: '["gemini/gemini-flash-latest", "openai/opencode/gemini-3.5-flash-lite"]'
           CONFIG.custom_model_max_tokens: 32000
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           github_action_config.auto_review: "true"
