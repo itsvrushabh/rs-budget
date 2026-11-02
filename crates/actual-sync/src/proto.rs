@@ -3,9 +3,7 @@
 use prost::Message as ProstMessage;
 
 #[allow(clippy::all)]
-pub mod sync {
-    include!(concat!(env!("OUT_DIR"), "/actual.sync.rs"));
-}
+pub mod sync;
 
 pub use sync::{EncryptedData, Message, MessageEnvelope, SyncRequest, SyncResponse};
 
