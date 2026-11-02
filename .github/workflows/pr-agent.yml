@@ -34,8 +34,8 @@ jobs:
           echo "OPENAI_KEY=$token" >> "$GITHUB_ENV"
           echo "OPENAI_API_KEY=$token" >> "$GITHUB_ENV"
 
-          echo "Inspecting available OpenCode endpoints..."
-          curl -s -H "Authorization: Bearer $token" https://opencode.ai/inference/openai/v1/models || true
+          echo "Inspecting available Gemini models..."
+          curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=${{ secrets.GEMINI_API_KEY }}" | jq -r '.models[].name' | head -n 30 || true
 
       - name: PR Agent Action
         uses: the-pr-agent/pr-agent@main
@@ -44,8 +44,8 @@ jobs:
           OPENAI_BASE_URL: "https://opencode.ai/inference/openai/v1"
           OPENAI.API_BASE: "https://opencode.ai/inference/openai/v1"
           GOOGLE_AI_STUDIO.GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          CONFIG.model: "gemini/gemini-1.5-flash-latest"
-          CONFIG.fallback_models: '["gemini/gemini-1.5-pro-latest", "gemini/gemini-2.0-flash-exp"]'
+          CONFIG.model: "gemini/gemini-2.5-flash"
+          CONFIG.fallback_models: '["gemini/gemini-2.5-pro", "gemini/gemini-flash-latest"]'
           CONFIG.custom_model_max_tokens: 32000
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           github_action_config.auto_review: "true"
