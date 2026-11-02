@@ -8,6 +8,8 @@ pub mod cents;
 pub mod error;
 pub mod models;
 pub mod payee;
+pub mod rules;
+pub mod schedules;
 pub mod spreadsheet;
 pub mod transaction;
 pub mod validation;
@@ -18,6 +20,13 @@ pub use category::{Category, CategoryGroup};
 pub use cents::{Cents, MAX_SAFE_CENTS, MIN_SAFE_CENTS};
 pub use error::DomainError;
 pub use payee::Payee;
+pub use rules::{
+    Action, ActionField, ActionOp, ActionValue, Condition, ConditionField, ConditionOp,
+    ConditionValue, ConditionsOp, Rule, RuleStage, RulesEngine, SplitAllocation,
+};
+pub use schedules::{
+    generate_upcoming_transactions, Frequency, Schedule, ScheduleConfig, TimeUnit,
+};
 pub use spreadsheet::{CellValue, DependencyGraph, Spreadsheet};
 pub use transaction::Transaction;
 pub use validation::{
