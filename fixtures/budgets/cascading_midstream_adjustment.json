@@ -1,0 +1,226 @@
+{
+  "scenario_name": "cascading_midstream_adjustment",
+  "description": "Tests mid-stream retro-active budget modifications in an earlier month cascading forward into future months",
+  "groups": [
+    {
+      "id": "grp_main",
+      "name": "Main Expenses",
+      "is_income": false
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat_savings",
+      "group_id": "grp_main",
+      "name": "Emergency Savings",
+      "is_income": false
+    },
+    {
+      "id": "cat_leisure",
+      "group_id": "grp_main",
+      "name": "Leisure",
+      "is_income": false
+    }
+  ],
+  "initial": {
+    "2026-01": {
+      "month": "2026-01",
+      "total_income": 300000,
+      "from_last_month": 0,
+      "available_funds": 300000,
+      "last_month_overspent": 0,
+      "total_budgeted": 150000,
+      "total_spent": 0,
+      "total_leftover": 150000,
+      "to_budget": 150000,
+      "category_balances": {
+        "cat_savings": {
+          "budgeted": 100000,
+          "spent": 0,
+          "leftover": 100000,
+          "carryover": false
+        },
+        "cat_leisure": {
+          "budgeted": 50000,
+          "spent": 0,
+          "leftover": 50000,
+          "carryover": false
+        }
+      },
+      "group_balances": {
+        "grp_main": {
+          "budgeted": 150000,
+          "spent": 0,
+          "leftover": 150000
+        }
+      }
+    },
+    "2026-02": {
+      "month": "2026-02",
+      "total_income": 300000,
+      "from_last_month": 150000,
+      "available_funds": 450000,
+      "last_month_overspent": 0,
+      "total_budgeted": 150000,
+      "total_spent": 0,
+      "total_leftover": 300000,
+      "to_budget": 300000,
+      "category_balances": {
+        "cat_savings": {
+          "budgeted": 100000,
+          "spent": 0,
+          "leftover": 200000,
+          "carryover": false
+        },
+        "cat_leisure": {
+          "budgeted": 50000,
+          "spent": 0,
+          "leftover": 100000,
+          "carryover": false
+        }
+      },
+      "group_balances": {
+        "grp_main": {
+          "budgeted": 150000,
+          "spent": 0,
+          "leftover": 300000
+        }
+      }
+    },
+    "2026-03": {
+      "month": "2026-03",
+      "total_income": 300000,
+      "from_last_month": 300000,
+      "available_funds": 600000,
+      "last_month_overspent": 0,
+      "total_budgeted": 150000,
+      "total_spent": 0,
+      "total_leftover": 450000,
+      "to_budget": 450000,
+      "category_balances": {
+        "cat_savings": {
+          "budgeted": 100000,
+          "spent": 0,
+          "leftover": 300000,
+          "carryover": false
+        },
+        "cat_leisure": {
+          "budgeted": 50000,
+          "spent": 0,
+          "leftover": 150000,
+          "carryover": false
+        }
+      },
+      "group_balances": {
+        "grp_main": {
+          "budgeted": 150000,
+          "spent": 0,
+          "leftover": 450000
+        }
+      }
+    }
+  },
+  "modification": {
+    "month": "2026-01",
+    "category_id": "cat_savings",
+    "new_budget": 150000
+  },
+  "after_modification": {
+    "2026-01": {
+      "month": "2026-01",
+      "total_income": 300000,
+      "from_last_month": 0,
+      "available_funds": 300000,
+      "last_month_overspent": 0,
+      "total_budgeted": 200000,
+      "total_spent": 0,
+      "total_leftover": 200000,
+      "to_budget": 100000,
+      "category_balances": {
+        "cat_savings": {
+          "budgeted": 150000,
+          "spent": 0,
+          "leftover": 150000,
+          "carryover": false
+        },
+        "cat_leisure": {
+          "budgeted": 50000,
+          "spent": 0,
+          "leftover": 50000,
+          "carryover": false
+        }
+      },
+      "group_balances": {
+        "grp_main": {
+          "budgeted": 200000,
+          "spent": 0,
+          "leftover": 200000
+        }
+      }
+    },
+    "2026-02": {
+      "month": "2026-02",
+      "total_income": 300000,
+      "from_last_month": 100000,
+      "available_funds": 400000,
+      "last_month_overspent": 0,
+      "total_budgeted": 150000,
+      "total_spent": 0,
+      "total_leftover": 350000,
+      "to_budget": 250000,
+      "category_balances": {
+        "cat_savings": {
+          "budgeted": 100000,
+          "spent": 0,
+          "leftover": 250000,
+          "carryover": false
+        },
+        "cat_leisure": {
+          "budgeted": 50000,
+          "spent": 0,
+          "leftover": 100000,
+          "carryover": false
+        }
+      },
+      "group_balances": {
+        "grp_main": {
+          "budgeted": 150000,
+          "spent": 0,
+          "leftover": 350000
+        }
+      }
+    },
+    "2026-03": {
+      "month": "2026-03",
+      "total_income": 300000,
+      "from_last_month": 250000,
+      "available_funds": 550000,
+      "last_month_overspent": 0,
+      "total_budgeted": 150000,
+      "total_spent": 0,
+      "total_leftover": 500000,
+      "to_budget": 400000,
+      "category_balances": {
+        "cat_savings": {
+          "budgeted": 100000,
+          "spent": 0,
+          "leftover": 350000,
+          "carryover": false
+        },
+        "cat_leisure": {
+          "budgeted": 50000,
+          "spent": 0,
+          "leftover": 150000,
+          "carryover": false
+        }
+      },
+      "group_balances": {
+        "grp_main": {
+          "budgeted": 150000,
+          "spent": 0,
+          "leftover": 500000
+        }
+      }
+    }
+  }
+}
