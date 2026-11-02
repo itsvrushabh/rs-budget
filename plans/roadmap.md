@@ -17,9 +17,9 @@ Track each checklist item in issues or pull requests as work begins. Update this
   - [x] Match upstream table schemas and migration versions.
   - [x] Validate direct opening, querying, and updating of existing upstream SQLite budget files with zero data transformation loss.
   - [x] Verify database transaction safety, crash recovery, and backup/restore behavior on copied test budgets.
-- [ ] Port cryptographic algorithms in `actual-crypto` ([#7](https://github.com/itsvrushabh/rs-budget/issues/7))
-  - [ ] Port PBKDF2 key derivation and AES-GCM encryption/decryption.
-  - [ ] Add cross-implementation known-answer tests against upstream Node.js output.
+- [x] Port cryptographic algorithms in `actual-crypto` ([#7](https://github.com/itsvrushabh/rs-budget/issues/7))
+  - [x] Port PBKDF2 key derivation and AES-GCM encryption/decryption.
+  - [x] Add cross-implementation known-answer tests against upstream Node.js output.
 - [ ] Implement wire primitives and CRDT structures in `actual-sync` ([#8](https://github.com/itsvrushabh/rs-budget/issues/8))
   - [ ] Generate Protobuf codecs via `prost` from `sync.proto`.
   - [ ] Implement Hybrid Logical Clock (HLC) timestamps and Merkle tree state comparison structures.
