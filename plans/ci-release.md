@@ -67,27 +67,44 @@ Run required checks on pull requests and pushes to `main`:
 
 Keep platform-specific tests explicit. Required status checks should report a result even when optional path-filtered work is skipped. Cancel superseded PR runs, retain useful logs, and identify failing targets in check summaries.
 
-## Automated PR review
+## Automated PR review (PR-Agent with Gemini)
 
-- Review PR open, reopen, and update events against the latest commit; avoid repeating unchanged findings.
-- Focus on correctness, error handling, unsafe code, concurrency, data integrity, cryptography, compatibility, tests, and documentation.
-- Report actionable findings with file/line references, severity, and rationale; distinguish bugs from optional suggestions.
-- Keep the review advisory. Require human approval and all required CI checks; automated review must not approve or merge its own PR.
-- Pin third-party actions to immutable revisions, use least-privilege permissions, and do not expose secrets to forked PRs. Restrict write access to what is needed to post feedback.
+Automated PR code reviews are powered by **PR-Agent** integrated with the Google Gemini API using the repository secret `GEMINI_API_KEY`:
+
+- **Trigger Events:** PR `opened`, `reopened`, `ready_for_review`, `synchronize`, or on-demand via comment commands (e.g., `/review`).
+- **AI Model & Provider:** Google Gemini (`gemini-2.0-flash` / `gemini-1.5-pro` via `GOOGLE_AI_STUDIO.GEMINI_API_KEY`).
+- **Review Scope:**
+  - Code correctness, syntax, and error handling.
+  - Rust idioms, memory safety, unsafe code audit, and concurrency patterns.
+  - Data integrity, SQLite query correctness, and serialization compatibility.
+  - Test coverage adequacy and documentation completeness.
+  - Verification that the PR links to a valid GitHub Issue ID.
+- **Security & Advisory Role:**
+  - Automated reviews are strictly advisory. PR-Agent provides constructive inline suggestions and summary evaluations but does not approve or merge PRs.
+  - Secrets are scoped with least-privilege permissions (`contents: read`, `pull-requests: write`, `issues: write`). Secrets are never exposed to untrusted forked PRs.
 
 ## Release workflow
 
-A `v*.*.*` tag starts a release workflow after validating SemVer and the project's recorded release version.
+A merge to the `release` branch or a `v*.*.*` tag starts the automated release workflow after validating SemVer and the project's recorded release version.
 
 1. Re-run formatting, Clippy, tests, parity/compatibility checks, supported target builds, and dependency/security checks from the tagged commit.
 2. Build and publish release artifacts via the automated `release` branch workflow:
+   - **Cargo Libraries / Modules:** Authenticate with crates.io using the repository secret `CARGO_REGISTRY_TOKEN` to package, verify, and publish public Rust crates (`actual-core`, `actual-storage`, `actual-api`, `actual-sync`, etc.).
+   - **Self-Hosted Web Server:** Build and publish multi-architecture container images (Docker/OCI `linux/amd64`, `linux/arm64`) with version tags to GitHub Container Registry (ghcr.io).
    - **Android App:** Build signed APK and Google Play bundle (AAB).
    - **iOS App:** Build and package iOS/iPad application (IPA / TestFlight).
-   - **Cargo Libraries / Modules:** Validate, package, and publish public Rust crates (`actual-core`, `actual-api`, `actual-storage`, etc.) to crates.io.
-   - **Self-Hosted Web Server:** Build and publish multi-architecture container images (Docker/OCI `linux/amd64`, `linux/arm64`) with version tags to GitHub Container Registry (ghcr.io).
    - **Desktop & CLI/TUI Binaries:** Compile native standalone binaries for Linux, macOS, and Windows.
 3. Generate SHA-256 checksums and provenance; sign release artifacts and container images with the configured project identity.
 4. Create release notes from merged Conventional Commits and attach artifacts, checksums, and provenance to the GitHub Release.
 5. Make publication idempotent and visibly fail on partial releases. Document safe retry/withdrawal procedures; never silently replace an existing version or artifact.
+
+## Repository secrets and credentials
+
+The following repository secrets are configured in GitHub Settings for automated operations:
+
+| Secret Name | Purpose | Used In Workflow |
+|---|---|---|
+| `CARGO_REGISTRY_TOKEN` | Crates.io API token for automated publishing of public Rust workspace crates. | `release.yml` on `release` branch or release tags. |
+| `GEMINI_API_KEY` | Google Gemini API key used by PR-Agent to analyze, describe, and review pull requests. | `pr-agent.yml` on pull request events. |
 
 Keep release credentials out of PR workflows. Use platform and artifact targets verified in the upstream inventory rather than assuming installer formats or architectures.
