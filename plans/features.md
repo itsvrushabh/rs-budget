@@ -11,24 +11,24 @@ The initial Rust release targets functional parity with the pinned Actual Budget
 
 ## Data and integrations
 
-- Existing Actual SQLite budget files remain importable; rs-budget stores active data in Turso/libSQL.
-- Versioned Turso schema migrations and backup/recovery workflows.
+- rs-budget stores active budget data directly in SQLite using `rusqlite`, maintaining 100% native file and schema compatibility with upstream Actual budgets.
+- Versioned SQLite schema migrations and backup/recovery workflows compatible with upstream migration versions.
 - Existing encryption and key-derivation formats.
 - Upstream-supported financial imports and exports, preserving their behavior and edge cases.
 - Existing application API, sync protocol, and multi-device behavior.
 
 ## Applications and deployment surfaces
 
-Actual has shared budgeting functionality presented through multiple clients and a separate server. In the Rust rewrite, keep these roles distinct:
+Actual has shared budgeting functionality presented through multiple clients and a separate server. In rs-budget, all surfaces are built with **100% Rust**, with the CLI and TUI prioritized as early first-class operational interfaces:
 
-| Surface | Role in rs-budget |
-|---|---|
-| Web UI | Browser client. Preserve both server-backed use and any supported local-only browser workflow. |
-| Desktop app | Desktop client for Windows, macOS, and Linux. Preserve offline use and server connection where supported. |
-| Mobile app | Mobile client for Android and iOS; the iOS app should support iPad as well as iPhone. Upstream also documents installing the web app on mobile. |
-| Server | Self-hosted service for sync and server-dependent features. It is a backend component, not another client UI. |
-| CLI | Non-interactive command-line interface for scripting, automation, and direct commands. |
-| TUI | New rs-budget full-screen terminal client. This is an explicit addition, not an upstream parity requirement. |
+| Surface | Priority | Role in rs-budget |
+|---|---|---|
+| CLI | High (Tier 1) | 100% Rust non-interactive command-line interface for scripting, automation, and direct inspection. |
+| TUI | High (Tier 1) | 100% Rust full-screen interactive terminal client (`ratatui`) for fast, keyboard-first budgeting. |
+| Server | High (Tier 1) | 100% Rust self-hosted backend service (`axum`) for sync, encryption key exchange, and multi-device coordination. |
+| Desktop app | Tier 2 | 100% native Rust GUI (e.g. Slint / Dioxus) for Windows, macOS, and Linux, with full offline local-first support. |
+| Web UI | Tier 2 | 100% Rust browser client compiled to WebAssembly (WASM). |
+| Mobile app | Tier 2 | 100% Rust mobile client for Android and iOS (including iPad). |
 
 Preserve upstream-supported interaction patterns, localization, and accessibility on existing clients. Define keyboard-first navigation and readable, accessible terminal output for the TUI.
 
@@ -59,7 +59,7 @@ A feature is not complete solely because its screen or endpoint exists. Verify c
 ## Compatibility requirements
 
 - Test representative, anonymized fixtures from supported budget versions.
-- Verify SQLite-to-Turso import results, migration safety, encryption, imports/exports, and sync against upstream-compatible fixtures or implementations.
-- Define supported old/new client and server combinations during migration.
-- Use copied test budgets; verify failed imports leave the original SQLite budget recoverable and untouched.
+- Verify native SQLite database compatibility, schema migrations, encryption, imports/exports, and sync against upstream-compatible fixtures and official Actual releases.
+- Define supported old/new client and server combinations during migration and sync negotiation.
+- Use copied test budgets; verify failed operations leave existing SQLite budget files recoverable and untouched.
 - Never include real user financial data in repository fixtures or CI artifacts.

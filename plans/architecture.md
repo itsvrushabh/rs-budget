@@ -3,70 +3,74 @@
 ## Guiding decisions
 
 - Begin by porting verified upstream responsibilities; do not invent new service boundaries or protocols in advance.
-- Use Turso/libSQL as rs-budget's target storage engine instead of SQLite.
-- Treat Actual's existing SQLite budget files as an import/compatibility format. Preserve the ability to import them; do not assume Turso can open them in place or that the schemas and runtime behaviors are interchangeable.
-- Keep budget-file, encryption, and sync compatibility as explicit requirements independent of the database engine. Any conversion must be versioned, validated, recoverable, and must not silently alter or discard source data.
-- Select the UI framework after a focused prototype against upstream platform and accessibility requirements.
+- Commit to **100% Rust** across the entire stack: domain logic, storage, synchronization, server, CLI, TUI, and graphical interfaces.
+- Use **SQLite** (via `rusqlite`) as rs-budget's default authoritative storage engine, ensuring 1:1 binary file, schema, and query compatibility with upstream Actual budgets without requiring data migration.
+- Abstract storage access behind a clean `BudgetStore` trait in `actual-storage` to cleanly separate persistence from core budgeting domain logic (and allow optional future backends if needed).
+- Prioritize the **CLI** and interactive **TUI** as early Tier-1 operational surfaces to establish and validate end-to-end user workflows before tackling native graphical clients.
+- Maintain strict budget-file, encryption, and CRDT sync compatibility with upstream Actual Budget.
+- For graphical interfaces, select a 100% Rust UI framework (such as Slint or Dioxus) after focused prototyping against platform responsiveness, keyboard navigation, and accessibility requirements.
 
 ## Candidate Rust workspace
 
 ```text
 actual-rust/
 └── crates/
-    ├── actual-core/      # Domain types, calculations, rules, and reports
-    ├── actual-storage/   # Turso/libSQL access, schema, migrations, and SQLite import
-    ├── actual-sync/      # Existing CRDT semantics, protobuf, and sync behavior
-    ├── actual-crypto/    # Existing encryption and key-derivation compatibility
-    ├── actual-import/    # Upstream-supported financial import and export formats
-    ├── actual-api/       # Typed application API and compatibility layer
-    ├── actual-server/    # Local/self-hosted HTTP services, auth, and sync server
-    ├── actual-ui/        # Shared UI/domain-facing client APIs and platform adapters
-    ├── actual-tui/       # Interactive full-screen terminal client (new rs-budget surface)
-    └── actual-cli/       # Non-interactive scripting and command-line workflows
+    ├── actual-core/      # Domain types, envelope calculations, rules, spreadsheet DAG, and reports
+    ├── actual-storage/   # SQLite (rusqlite) access, schema DDL, versioned migrations, and queries
+    ├── actual-sync/      # Application CRDT (HLC, Merkle tree), protobuf wire formats, sync engine
+    ├── actual-crypto/    # PBKDF2, AES-GCM encryption and key-derivation compatibility
+    ├── actual-import/    # Upstream-supported financial import and export formats (QIF, OFX, CSV)
+    ├── actual-api/       # Typed application API and client-service boundary
+    ├── actual-server/    # 100% Rust self-hosted HTTP server (Axum), auth, and sync endpoints
+    ├── actual-cli/       # Non-interactive CLI for scripting, automation, and inspection (Tier 1)
+    ├── actual-tui/       # Full-screen interactive terminal client via Ratatui (Tier 1)
+    └── actual-gui/       # 100% native Rust cross-platform GUI (Tier 2: Desktop, Web WASM, Mobile)
 ```
 
-These are candidate boundaries, not a mandate to create every crate immediately. Confirm module ownership and dependencies from the pinned upstream source and build the smallest useful vertical slice first.
+These crate boundaries maintain clean dependency layering and clear ownership. Build the smallest useful vertical slice first (`actual-storage` + `actual-core` + `actual-cli`/`actual-tui`).
 
-## Client surfaces
+## Client surfaces & prioritization
 
 Plan for the following distinct client/deployment targets:
 
-- **Web:** browser UI, supporting server-backed operation and local-only use where upstream supports it.
-- **Desktop:** Windows, macOS, and Linux app, including offline workflows where supported.
-- **Mobile:** Android and iOS client; iOS includes iPad. Also account for the upstream-documented installable web app on mobile.
-- **Server:** self-hosted backend for sync and server-dependent capabilities; separate from the client applications.
-- **CLI:** non-interactive commands for scripts and automation.
-- **TUI:** interactive, keyboard-driven terminal client, newly added for rs-budget.
+### Tier 1: Fast-Validation and Power-User Surfaces
+- **CLI (`actual-cli`):** 100% Rust non-interactive commands for scripting, batch transaction imports, account inspection, and automated maintenance.
+- **TUI (`actual-tui`):** 100% Rust interactive, keyboard-driven full-screen terminal client built with `ratatui`. Delivers early, complete budgeting workflows (envelope allocations, transaction entry, month rollover navigation) directly against `actual-core`.
+- **Server (`actual-server`):** 100% Rust self-hosted sync and coordination backend built with `axum`. Implements Actual's sync endpoints, auth, and key management without any Node.js dependencies.
 
-The exact upstream implementation and support status for each target must be recorded in the baseline inventory. Do not equate an available build project with a generally supported/released product.
+### Tier 2: 100% Rust Native Graphical Surfaces
+- **Desktop:** 100% native Rust GUI (e.g. Slint / Dioxus) for Linux, macOS, and Windows with offline-first SQLite support.
+- **Web:** 100% Rust browser UI compiled to WebAssembly (WASM), using SQLite over OPFS (Origin Private File System) for local-first browser storage.
+- **Mobile:** 100% Rust mobile builds for Android and iOS (including iPad).
 
-All clients should share domain logic and validation through the core/API boundary. The TUI must not implement independent money calculations or write around established storage, encryption, or sync paths. Keep interactive TUI navigation distinct from CLI commands and machine-readable CLI output.
+All clients share domain logic, validation, and calculations through `actual-core`. Neither the TUI nor the GUI duplicate budgeting calculations or bypass established storage and encryption paths.
 
-## Compatibility work
+## Core engine & reactive calculation architecture
 
-Before implementation, document:
+Upstream Actual relies on a reactive spreadsheet calculation graph (`loot-core`) where budget envelope cells, category balances, and month rollovers recompute incrementally upon transaction or allocation changes:
 
-- Upstream SQLite schema, migration order, query/mutation semantics, and transaction boundaries.
-- Turso/libSQL Rust client capabilities, supported platforms, local/offline behavior, remote connectivity, replication model, and operational requirements.
-- The rs-budget Turso schema and migration/versioning policy, including which upstream SQLite fields and semantics need translation.
-- Budget-file layout, amount/date encoding, encryption parameters, and key derivation.
-- Protobuf definitions, CRDT behavior, API routes, and client/server sync negotiation.
-- Import/export formats and upstream-supported desktop, browser, and server targets.
+- **Spreadsheet Dependency Graph:** Implement the reactive calculation graph in `actual-core` using a directed acyclic graph (DAG) backed by a generational arena/slotmap. This avoids Rust borrow-checker conflicts while enabling deterministic, cycle-free topological recomputations.
+- **Rules Engine:** Port upstream transaction rules (conditions and actions applied during transaction creation/sync) as a deterministic rule-evaluation pipeline.
+- **Deterministic Precision:** Use fixed-point integer cents/milli-units for all financial balances and currency math, matching upstream Actual's exact monetary encoding.
 
-Implement Turso as the authoritative storage layer for rs-budget. Keep the upstream SQLite reader/importer as a compatibility boundary, and port observed application and sync contracts rather than assuming specific algorithms. In particular, verify whether and how upstream uses HLCs, Merkle structures, WebSockets, or other synchronization mechanisms before choosing Rust equivalents. Database replication is not a replacement for Actual's application-level sync protocol unless interoperability and conflict behavior are demonstrated.
+## Sync and protocol compatibility
 
-## Turso deployment model
+Upstream Actual synchronizes data across clients and servers using an application-level CRDT:
+- **Hybrid Logical Clocks (HLC):** Generate monotonically increasing timestamps across distributed clients.
+- **Merkle Tree State Comparison:** Efficiently detect divergence between client and server message logs.
+- **Protobuf Wire Codecs:** Encode synchronization deltas (`SyncRequest`, `SyncResponse`) using `prost` matching upstream protobuf definitions.
+- **End-to-End Encryption:** Match upstream PBKDF2 key derivation and AES-GCM payload encryption for synced data.
 
-- Use the Turso/libSQL Rust client behind `actual-storage`; isolate vendor-specific APIs from core budgeting logic.
-- Prototype local-first operation against the supported Turso/libSQL modes before committing to a deployment topology. Verify offline reads/writes, reconnect and replication behavior, transaction guarantees, conflict handling, and supported desktop/mobile targets.
-- Define whether a user's local budget is a local database, an embedded replica, or another supported Turso mode, and how it relates to an optional self-hosted/remote Turso database. Do not promise seamless offline replication until tested.
-- Keep credentials and remote connection configuration out of budget files and logs. Document backup, restore, export, and recovery procedures for both local and remote data.
-- If a Turso mode cannot meet required platforms or local-first behavior, surface that as an architecture decision before implementation expands; do not silently fall back to a different engine.
+## SQLite storage model
+
+- Use `rusqlite` with WAL (Write-Ahead Logging) mode enabled for high concurrency and crash resilience.
+- Maintain identical table schemas (`accounts`, `categories`, `category_groups`, `transactions`, `rules`, `schedules`, `messages_merkletree`, `messages`) and schema migration versions to allow opening existing Actual budgets directly without conversion.
+- For Web/WASM targets, utilize an OPFS or IndexedDB VFS for `rusqlite` to maintain local-first database persistence in the browser.
+- Encapsulate connection management, transactions, and statements behind `actual-storage` so that domain crates do not execute raw SQL directly.
 
 ## Data safety
 
-- Add compatibility and known-answer fixtures before changing serialization or cryptographic code.
-- Make Turso schema migrations versioned and recoverable from a backup.
-- Build and test a one-way or explicitly documented SQLite-to-Turso import path on copied budgets; compare imported data and calculated results with upstream.
-- Ensure failed imports leave the original SQLite budget untouched and the partial Turso database safe to discard or resume.
-- Treat the SQLite-to-Turso conversion as an explicit storage migration within the port. Keep any additional file-format or sync-protocol changes separate, with explicit user communication and rollback guidance.
+- Add compatibility and known-answer test fixtures before changing serialization or cryptographic code.
+- Test schema migrations against authentic, anonymized budget snapshots across historical upstream versions.
+- Ensure failed operations roll back cleanly within SQLite transactions, leaving source files untouched and intact.
+- Differential test calculation outputs (envelope balances, rollover, overspending) against Node.js Actual on identical budget inputs.

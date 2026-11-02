@@ -1,5 +1,25 @@
 # CI, PR Review, and Release Plan
 
+## Branching strategy and lifecycle
+
+The repository uses an organized branching model tailored for safety, structured integration, and automated CI/CD workflows:
+
+| Branch | Purpose & Lifecycle | Protection & Merge Policy |
+|---|---|---|
+| `main` | Production-ready, stable codebase. Tagged releases (`v*.*.*`) originate here. | Protected. Requires passing CI, human review approval, and linear history. No direct commits. |
+| `dev` | Primary integration branch for active development. Feature and bugfix PRs merge here. | Protected. PR required, must pass all CI checks (fmt, clippy, unit/integration tests). |
+| `release` | Release staging and stabilization branch. Used for pre-release validation, version bumping, changelog preparation, and final verification before merging to `main`. | Protected. Only release preparation commits and cherry-picked critical fixes. Merges to `main` and back-merges to `dev`. |
+| `planning` | Dedicated branch for architecture, roadmap updates, technical specifications, and project planning documentation. | Dedicated to planning iterations; merged into `dev`/`main` as specifications are finalized. |
+| `ci-workflow` | Dedicated branch for CI pipelines, GitHub Actions workflows, build/test scripts, and developer tooling infrastructure. | Isolated branch for developing and testing workflow automation without disrupting core code. |
+
+### Working branch naming conventions
+
+- `feat/<scope>`: New features (e.g. `feat/tui-envelope-nav`, `feat/sqlite-schema`). Branched from `dev`, merged into `dev`.
+- `fix/<issue>`: Bugfixes for active development code. Branched from `dev`, merged into `dev`.
+- `hotfix/<version>`: Urgent production fixes branched directly from `main`. Merged into `main`, `release`, and back into `dev`.
+- `chore/<task>`: Tooling, dependency bumps, or maintenance tasks.
+- `docs/<topic>`: Documentation and non-code guide updates.
+
 ## Pull request checks
 
 Run required checks on pull requests and pushes to `main`:
@@ -9,7 +29,8 @@ Run required checks on pull requests and pushes to `main`:
 - Workspace unit and integration tests on supported operating systems.
 - Native target builds and `wasm32-unknown-unknown` checks only for browser-facing Rust code.
 - Dependency/security checks, plus required data-format, sync interoperability, and differential parity checks for relevant changes.
-- Turso integration tests and SQLite-to-Turso import regression tests, including migration and recovery cases.
+- SQLite database integration tests and schema migration regression tests, including crash recovery and WAL consistency.
+- Differential test suites verifying identical envelope calculation and rollover results between rs-budget and upstream Node.js Actual.
 - Bounded parser and crypto-decoder fuzz smoke tests; run longer fuzz campaigns on a schedule.
 
 Keep platform-specific tests explicit. Required status checks should report a result even when optional path-filtered work is skipped. Cancel superseded PR runs, retain useful logs, and identify failing targets in check summaries.

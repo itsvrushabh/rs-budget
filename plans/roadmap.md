@@ -5,52 +5,57 @@ Track each checklist item in issues or pull requests as work begins. Update this
 ## Phase 0 — Upstream inventory and baseline
 
 - [ ] Pin the upstream commit/release to port.
-- [ ] Map upstream packages—including core, CRDT, API, web/desktop/mobile clients, server, CLI, and docs—to Rust responsibilities; distinguish released/supported surfaces from build targets.
-- [ ] Create a feature/workflow matrix from upstream source, docs, tests, and CI; identify supported platforms and release artifacts.
-- [ ] Record build/test commands, database and file formats, protobuf definitions, API routes, external integrations, and known unsupported/experimental features.
+- [ ] Map upstream packages—including `loot-core`, CRDT, API, server, and web/desktop clients—to Rust responsibilities.
+- [ ] Extract upstream SQLite DDL, migration order, protobuf definitions (`sync.proto`), and encryption parameters.
+- [ ] Create a feature and workflow matrix from upstream source, docs, tests, and CI.
 - [ ] Prepare representative anonymized fixtures and expected results for calculations, migrations, imports, encryption, and sync.
 
-## Phase 1 — Data, crypto, and protocol compatibility
+## Phase 1 — Storage, crypto, and wire primitives
 
-- [ ] Document upstream SQLite schema and migration ordering, amount/date encoding, budget-file layout, encryption, key derivation, and supported import/export formats.
-- [ ] Select and prototype the Turso/libSQL Rust client and required local/remote mode; verify supported targets, offline behavior, replication/conflicts, transaction guarantees, and recovery.
-- [ ] Define the rs-budget Turso schema and versioned migration process.
-- [ ] Implement a SQLite-to-Turso importer; compare row counts, relationships, balances, and representative calculated results against the source budget.
-- [ ] Test import interruption and failure on copied budgets; ensure the SQLite source remains unchanged and recoverable.
-- [ ] Port cryptographic algorithms, parameters, and serialized formats exactly; add known-answer and cross-implementation tests.
-- [ ] Port observed protobuf and sync semantics; verify interoperability with upstream fixtures and supported client/server combinations.
+- [ ] Implement `actual-storage` using `rusqlite` with WAL mode, matching upstream table schemas and migration versions.
+- [ ] Validate direct opening, querying, and updating of existing upstream SQLite budget files with zero data transformation loss.
+- [ ] Port cryptographic algorithms (`actual-crypto`): PBKDF2 key derivation and AES-GCM encryption/decryption with cross-implementation known-answer tests.
+- [ ] Implement wire primitives in `actual-sync`: Protobuf codecs (via `prost`), Hybrid Logical Clock (HLC) timestamps, and Merkle tree state comparison structures.
+- [ ] Verify database transaction safety, crash recovery, and backup/restore behavior on copied test budgets.
 
-## Phase 2 — Core budgeting
+## Phase 2 — Core budgeting domain & calculation engine
 
-- [ ] Port domain models and deterministic calculations for accounts, transactions, splits, categories, schedules, rules, month rollover, carry-forward, overspending, reports, and reconciliation.
-- [ ] Differential-test representative inputs and edge cases against the pinned upstream implementation.
-- [ ] Port query and mutation behavior behind typed Rust APIs; preserve undo and transaction consistency.
+- [ ] Port domain models (`actual-core`): Accounts, Payees, Categories, Category Groups, Transactions, and Splits.
+- [ ] Implement reactive spreadsheet calculation DAG in `actual-core` using a generational arena for cycle-free, incremental envelope calculations, month rollover, carry-forward, and overspending.
+- [ ] Port rules evaluation engine (conditions and actions applied during transaction creation/mutation) and schedules.
+- [ ] Build a differential test harness: run identical transaction streams through upstream Node.js Actual and Rust `actual-core` to verify identical balances, envelope numbers, and reports.
+- [ ] Expose query, mutation, and undo behavior behind typed Rust APIs in `actual-api`.
 
-## Phase 3 — Imports, API, and server
+## Phase 3 — Prioritized CLI, TUI, and import workflows
 
-- [ ] Port every upstream-supported import/export workflow and validate it with format fixtures and regressions.
-- [ ] Implement verified application API, local/self-hosted server, authentication, budget access, encryption, and sync behavior.
-- [ ] Test Turso local-only operation, restart/recovery, remote connectivity/replication where selected, multi-client sync, conflicts, retries, and older supported budget versions.
+- [ ] Implement financial format parsers in `actual-import`: QIF, OFX, and CSV workflows verified against upstream format fixtures.
+- [ ] Build `actual-cli`: non-interactive commands for scripting, batch imports, account inspection, and automated budget maintenance.
+- [ ] Build `actual-tui` as a first-class interactive client using `ratatui`:
+  - Connect to local SQLite budget files or remote servers.
+  - Navigate months and view category group and envelope balances.
+  - Browse accounts and transactions with search and filter capabilities.
+  - Inline transaction creation, editing, split entry, and categorization.
+  - Edit category allocations and envelope settings with immediate calculation feedback.
+- [ ] Test TUI keyboard navigation, terminal resizing, narrow layouts, error reporting, and confirmation for destructive actions.
 
-## Phase 4 — Web, desktop, and mobile clients
+## Phase 4 — Sync engine & 100% Rust self-hosted server
 
-- [ ] Prototype and select a Rust UI framework against upstream interaction and accessibility requirements.
-- [ ] Port the browser and desktop workflows for Windows, macOS, and Linux, including supported offline behavior.
-- [ ] Port the mobile workflows for Android and iOS, including iPad support; evaluate the installable mobile web app separately from the native package.
-- [ ] Preserve shared components, keyboard behavior, localization, themes, and accessibility.
-- [ ] Package and test supported client/server deployments; isolate platform-specific behavior behind explicit adapters.
+- [ ] Implement complete client CRDT sync logic in `actual-sync`: message log management, Merkle tree range diffing, and conflict resolution.
+- [ ] Implement `actual-server` in 100% Rust using `axum`: user authentication, encryption key exchange, budget metadata, and sync endpoints (`/sync/sync`).
+- [ ] Test end-to-end sync interoperability between rs-budget (TUI/CLI) and upstream official Actual clients and servers.
+- [ ] Test multi-device concurrency, offline reconnects, conflict resolution, and network retry logic.
 
-## Phase 5 — CLI and TUI
+## Phase 5 — 100% Rust native graphical clients
 
-- [ ] Provide a non-interactive CLI for upstream-equivalent commands and scripting; document its server/local connection requirements.
-- [ ] Build an interactive TUI as an additional rs-budget client, sharing the core/API behavior instead of duplicating business logic.
-- [ ] Deliver the initial TUI workflows: budget/month navigation, category balances and allocations, account/transaction browsing, and common transaction edits.
-- [ ] Test keyboard navigation, terminal resizing, narrow layouts, accessibility/readability, error states, and safe handling of destructive actions.
-- [ ] Expand TUI coverage to reports, schedules, and rules only after the initial workflows are stable.
+- [ ] Prototype and select a pure Rust cross-platform GUI framework (e.g. Slint or Dioxus) evaluated against keyboard navigation, table editing, and accessibility.
+- [ ] Build the native Desktop client for Linux, macOS, and Windows with offline-first SQLite support.
+- [ ] Build the Web client compiled to WebAssembly (WASM), using `rusqlite` backed by OPFS (Origin Private File System) for browser-local storage.
+- [ ] Build the Mobile client for Android and iOS (including iPad).
+- [ ] Isolate platform-specific adapters behind `actual-gui` while reusing `actual-core` and `actual-api`.
 
 ## Phase 6 — Parity, migration, and cutover
 
-- [ ] Pass the upstream feature matrix and end-to-end tests on supported platforms; track TUI as an additional rs-budget surface, not an upstream parity blocker.
-- [ ] Test upgrade, backup/restore, recovery, and old/new interoperability on copied fixtures; publish migration instructions and limitations.
-- [ ] Ship an opt-in preview before broad release.
-- [ ] Retire upstream runtime components only after parity, migration safety, and operational recovery criteria are met.
+- [ ] Pass full feature matrix and integration verification across CLI, TUI, Server, and Graphical clients.
+- [ ] Test cross-version upgrades, automated backups, and recovery on real-world anonymized budgets.
+- [ ] Ship an opt-in preview release for community validation and feedback.
+- [ ] Finalize documentation, user migration guides, and production release pipeline.
