@@ -29,9 +29,9 @@ Track each checklist item in issues or pull requests as work begins. Update this
 - [x] Port domain models in `actual-core` ([#9](https://github.com/itsvrushabh/rs-budget/issues/9))
   - [x] Port Accounts, Payees, Categories, Category Groups, Transactions, and Splits.
   - [x] Implement integer cents monetary precision and invariant validations.
-- [ ] Implement reactive spreadsheet calculation DAG in `actual-core` ([#10](https://github.com/itsvrushabh/rs-budget/issues/10))
-  - [ ] Build dependency graph with a generational arena for cycle-free incremental envelope calculations.
-  - [ ] Implement month rollover, carry-forward, and overspending calculation logic.
+- [x] Implement reactive spreadsheet calculation DAG in `actual-core` ([#10](https://github.com/itsvrushabh/rs-budget/issues/10))
+  - [x] Build dependency graph with a generational arena for cycle-free incremental envelope calculations.
+  - [x] Implement month rollover, carry-forward, and overspending calculation logic.
 - [ ] Port rules evaluation engine and recurring schedules in `actual-core` ([#11](https://github.com/itsvrushabh/rs-budget/issues/11))
   - [ ] Implement rule conditions and actions evaluated during transaction creation/mutation.
   - [ ] Implement recurring schedule execution and upcoming transaction generation.
