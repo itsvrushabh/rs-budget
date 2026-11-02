@@ -1,0 +1,10 @@
+[package]
+name = "actual-sync"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+actual-core = { path = "../actual-core" }
+prost = "0.13"
+thiserror = "1.0"
