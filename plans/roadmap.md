@@ -32,9 +32,9 @@ Track each checklist item in issues or pull requests as work begins. Update this
 - [x] Implement reactive spreadsheet calculation DAG in `actual-core` ([#10](https://github.com/itsvrushabh/rs-budget/issues/10))
   - [x] Build dependency graph with a generational arena for cycle-free incremental envelope calculations.
   - [x] Implement month rollover, carry-forward, and overspending calculation logic.
-- [ ] Port rules evaluation engine and recurring schedules in `actual-core` ([#11](https://github.com/itsvrushabh/rs-budget/issues/11))
-  - [ ] Implement rule conditions and actions evaluated during transaction creation/mutation.
-  - [ ] Implement recurring schedule execution and upcoming transaction generation.
+- [x] Port rules evaluation engine and recurring schedules in `actual-core` ([#11](https://github.com/itsvrushabh/rs-budget/issues/11))
+  - [x] Implement rule conditions and actions evaluated during transaction creation/mutation.
+  - [x] Implement recurring schedule execution and upcoming transaction generation.
 - [ ] Build differential testing harness comparing rs-budget against Node.js Actual ([#12](https://github.com/itsvrushabh/rs-budget/issues/12))
   - [ ] Run identical transaction streams through upstream Node.js Actual and Rust `actual-core`.
   - [ ] Assert identical balances, envelope numbers, and reports.
