@@ -40,6 +40,9 @@ Track each checklist item in issues or pull requests as work begins. Update this
   - [ ] Assert identical balances, envelope numbers, and reports.
 - [ ] Expose query, mutation, and undo behavior behind typed APIs in `actual-api` ([#13](https://github.com/itsvrushabh/rs-budget/issues/13))
   - [ ] Implement command/mutation interfaces and undo/redo state restoration.
+- [ ] Implement financial reporting, net worth, and cash flow analytics engine in `actual-core` ([#37](https://github.com/itsvrushabh/rs-budget/issues/37))
+  - [ ] Calculate net worth progression (assets vs liabilities) over configurable timeframes.
+  - [ ] Generate monthly cash flow summaries, spending breakdowns by category group, and custom filtered analytics.
 
 ## Phase 3 — Prioritized CLI, TUI, and import workflows
 
@@ -56,12 +59,18 @@ Track each checklist item in issues or pull requests as work begins. Update this
   - [ ] Inline transaction creation, editing, split entry, and categorization.
   - [ ] Edit category allocations and envelope settings with immediate calculation feedback.
   - [ ] Keyboard navigation, terminal resizing, error reporting, and destructive action confirmation.
+- [ ] Implement automated bank synchronization integration in `actual-import` ([#38](https://github.com/itsvrushabh/rs-budget/issues/38))
+  - [ ] Build adapters for SimpleFIN and GoCardless (Nordigen Open Banking) APIs.
+  - [ ] Securely store bank credentials and support incremental delta synchronization.
 
 ## Phase 4 — Sync engine & 100% Rust self-hosted server
 
 - [ ] Implement complete client CRDT sync logic in `actual-sync` ([#17](https://github.com/itsvrushabh/rs-budget/issues/17))
   - [ ] Message log management, Merkle tree range diffing, and conflict resolution.
   - [ ] Offline queueing, exponential backoff, and network reconnect logic.
+- [ ] Implement full budget file encryption packaging, backup archives, and key rotation ([#39](https://github.com/itsvrushabh/rs-budget/issues/39))
+  - [ ] Encrypt raw SQLite budget files into `.actual` transportable archives using AES-256-GCM.
+  - [ ] Support re-encrypting budget databases and CRDT logs under an updated user passphrase.
 - [ ] Build 100% Rust self-hosted sync server with Axum in `actual-server` ([#18](https://github.com/itsvrushabh/rs-budget/issues/18))
   - [ ] User authentication, encryption key exchange, budget metadata, and sync endpoints (`/sync/sync`).
   - [ ] Multi-architecture Docker container images (`linux/amd64`, `linux/arm64`).
