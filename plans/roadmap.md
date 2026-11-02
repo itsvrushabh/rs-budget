@@ -4,12 +4,12 @@ Track each checklist item in issues or pull requests as work begins. Update this
 
 ## Phase 0 — Upstream inventory and baseline
 
-- [ ] Pin upstream commit/release, map packages, and generate test fixtures ([#5](https://github.com/itsvrushabh/rs-budget/issues/5))
-  - [ ] Pin the upstream commit/release to port in documentation.
-  - [ ] Map upstream packages—including `loot-core`, CRDT, API, server, and web/desktop clients—to Rust responsibilities.
-  - [ ] Extract upstream SQLite DDL, migration order, protobuf definitions (`sync.proto`), and encryption parameters.
-  - [ ] Create a feature and workflow matrix from upstream source, docs, tests, and CI.
-  - [ ] Prepare representative anonymized fixtures and expected results for calculations, migrations, imports, encryption, and sync.
+- [x] Pin upstream commit/release, map packages, and generate test fixtures ([#5](https://github.com/itsvrushabh/rs-budget/issues/5))
+  - [x] Pin the upstream commit/release to port in documentation (`v26.11.0` commit `1766241e3f4b3c578e424c4fa15f1eb83c0da17d`).
+  - [x] Map upstream packages—including `loot-core`, CRDT, API, server, and web/desktop clients—to Rust responsibilities.
+  - [x] Extract upstream SQLite DDL, migration order, protobuf definitions (`sync.proto`), and encryption parameters.
+  - [x] Create a feature and workflow matrix from upstream source, docs, tests, and CI.
+  - [x] Prepare representative anonymized fixtures and expected results for calculations, migrations, imports, encryption, and sync.
 
 ## Phase 1 — Storage, crypto, and wire primitives
 
