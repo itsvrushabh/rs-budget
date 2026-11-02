@@ -8,7 +8,7 @@ The repository uses an organized branching model tailored for safety, structured
 |---|---|---|
 | `main` | Production-ready, stable codebase. Tagged releases (`v*.*.*`) originate here. | Protected. Requires passing CI, human review approval, and linear history. No direct commits. |
 | `dev` | Primary integration branch for active development. Feature and bugfix PRs merge here. | Protected. PR required, must pass all CI checks (fmt, clippy, unit/integration tests). |
-| `release` | Release staging and stabilization branch. Used for pre-release validation, version bumping, changelog preparation, and final verification before merging to `main`. | Protected. Only release preparation commits and cherry-picked critical fixes. Merges to `main` and back-merges to `dev`. |
+| `release` | Automated release pipeline branch. Used strictly by GitHub Actions release workflows to package and release artifacts: Android apps (APK/AAB), iOS apps, Cargo crates/modules, and multi-architecture Docker container images for the self-hosted web server. | Locked. Direct manual commits and pushes are blocked. Changes are only pushed/merged by automated GitHub Actions workflows (or via strictly validated release PRs). |
 | `planning` | Dedicated branch for architecture, roadmap updates, technical specifications, and project planning documentation. | Dedicated to planning iterations; merged into `dev`/`main` as specifications are finalized. |
 | `ci-workflow` | Dedicated branch for CI pipelines, GitHub Actions workflows, build/test scripts, and developer tooling infrastructure. | Isolated branch for developing and testing workflow automation without disrupting core code. |
 
@@ -48,11 +48,14 @@ Keep platform-specific tests explicit. Required status checks should report a re
 A `v*.*.*` tag starts a release workflow after validating SemVer and the project's recorded release version.
 
 1. Re-run formatting, Clippy, tests, parity/compatibility checks, supported target builds, and dependency/security checks from the tagged commit.
-2. Build and smoke-test artifacts for upstream-supported desktop and self-hosted server surfaces.
-3. Publish validated multi-architecture container images with immutable version tags; move major/minor tags only after successful validation.
-4. Generate checksums and provenance; sign artifacts and images with the configured project identity.
-5. Create release notes from merged Conventional Commits and attach artifacts, checksums, and provenance to the GitHub Release.
-6. Publish Rust crates only if the project explicitly commits to a public crate API; otherwise keep workspace crates internal.
-7. Make publication idempotent and visibly fail on partial releases. Document safe retry/withdrawal procedures; never silently replace an existing version or artifact.
+2. Build and publish release artifacts via the automated `release` branch workflow:
+   - **Android App:** Build signed APK and Google Play bundle (AAB).
+   - **iOS App:** Build and package iOS/iPad application (IPA / TestFlight).
+   - **Cargo Libraries / Modules:** Validate, package, and publish public Rust crates (`actual-core`, `actual-api`, `actual-storage`, etc.) to crates.io.
+   - **Self-Hosted Web Server:** Build and publish multi-architecture container images (Docker/OCI `linux/amd64`, `linux/arm64`) with version tags to GitHub Container Registry (ghcr.io).
+   - **Desktop & CLI/TUI Binaries:** Compile native standalone binaries for Linux, macOS, and Windows.
+3. Generate SHA-256 checksums and provenance; sign release artifacts and container images with the configured project identity.
+4. Create release notes from merged Conventional Commits and attach artifacts, checksums, and provenance to the GitHub Release.
+5. Make publication idempotent and visibly fail on partial releases. Document safe retry/withdrawal procedures; never silently replace an existing version or artifact.
 
 Keep release credentials out of PR workflows. Use platform and artifact targets verified in the upstream inventory rather than assuming installer formats or architectures.
