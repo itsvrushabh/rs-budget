@@ -107,12 +107,16 @@ name = "actual-sync"
 version = "0.1.0"
 dependencies = [
  "actual-core",
+ "actual-crypto",
+ "base64",
  "chrono",
  "prost",
  "prost-build",
+ "rusqlite",
  "serde",
  "serde_json",
  "thiserror",
+ "ureq",
  "uuid",
 ]
 
