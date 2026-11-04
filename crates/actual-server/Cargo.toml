@@ -1,12 +1,15 @@
 [package]
 name = "actual-server"
+description = "Self-hosted Axum HTTP sync server for rs-budget"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+homepage.workspace = true
 
 [dependencies]
-actual-sync = { path = "../actual-sync" }
-actual-crypto = { path = "../actual-crypto" }
+actual-sync = { path = "../actual-sync", version = "0.1.0" }
+actual-crypto = { path = "../actual-crypto", version = "0.1.0" }
 tokio = { version = "1.0", features = ["full"] }
 axum = "0.7"
 serde = { version = "1.0", features = ["derive"] }

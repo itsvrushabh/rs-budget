@@ -1,0 +1,325 @@
+{
+  "scenario_name": "multi_month_rollover_scenario",
+  "description": "3-month progression testing positive rollover, uncarried overspending, and carried overspending identical to upstream Actual Budget",
+  "groups": [
+    {
+      "id": "grp_income",
+      "name": "Income",
+      "is_income": true
+    },
+    {
+      "id": "grp_bills",
+      "name": "Fixed Bills",
+      "is_income": false
+    },
+    {
+      "id": "grp_everyday",
+      "name": "Everyday",
+      "is_income": false
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat_salary",
+      "group_id": "grp_income",
+      "name": "Salary",
+      "is_income": true
+    },
+    {
+      "id": "cat_rent",
+      "group_id": "grp_bills",
+      "name": "Rent",
+      "is_income": false
+    },
+    {
+      "id": "cat_util",
+      "group_id": "grp_bills",
+      "name": "Utilities",
+      "is_income": false
+    },
+    {
+      "id": "cat_groc",
+      "group_id": "grp_everyday",
+      "name": "Groceries",
+      "is_income": false
+    },
+    {
+      "id": "cat_dine",
+      "group_id": "grp_everyday",
+      "name": "Dining Out",
+      "is_income": false
+    }
+  ],
+  "months": [
+    {
+      "month": "2026-01",
+      "uncategorized_income": 500000,
+      "allocations": [
+        {
+          "category_id": "cat_rent",
+          "budgeted": 150000,
+          "spent": -150000,
+          "carryover": false
+        },
+        {
+          "category_id": "cat_util",
+          "budgeted": 20000,
+          "spent": -25000,
+          "carryover": false
+        },
+        {
+          "category_id": "cat_groc",
+          "budgeted": 60000,
+          "spent": -45000,
+          "carryover": false
+        },
+        {
+          "category_id": "cat_dine",
+          "budgeted": 15000,
+          "spent": -20000,
+          "carryover": true
+        }
+      ],
+      "expected": {
+        "month": "2026-01",
+        "total_income": 500000,
+        "from_last_month": 0,
+        "available_funds": 500000,
+        "last_month_overspent": 0,
+        "total_budgeted": 245000,
+        "total_spent": -240000,
+        "total_leftover": 5000,
+        "to_budget": 255000,
+        "category_balances": {
+          "cat_salary": {
+            "budgeted": 0,
+            "spent": 0,
+            "leftover": 0,
+            "carryover": false
+          },
+          "cat_rent": {
+            "budgeted": 150000,
+            "spent": -150000,
+            "leftover": 0,
+            "carryover": false
+          },
+          "cat_util": {
+            "budgeted": 20000,
+            "spent": -25000,
+            "leftover": -5000,
+            "carryover": false
+          },
+          "cat_groc": {
+            "budgeted": 60000,
+            "spent": -45000,
+            "leftover": 15000,
+            "carryover": false
+          },
+          "cat_dine": {
+            "budgeted": 15000,
+            "spent": -20000,
+            "leftover": -5000,
+            "carryover": true
+          }
+        },
+        "group_balances": {
+          "grp_income": {
+            "budgeted": 0,
+            "spent": 0,
+            "leftover": 0
+          },
+          "grp_bills": {
+            "budgeted": 170000,
+            "spent": -175000,
+            "leftover": -5000
+          },
+          "grp_everyday": {
+            "budgeted": 75000,
+            "spent": -65000,
+            "leftover": 10000
+          }
+        }
+      }
+    },
+    {
+      "month": "2026-02",
+      "uncategorized_income": 450000,
+      "allocations": [
+        {
+          "category_id": "cat_rent",
+          "budgeted": 150000,
+          "spent": -150000,
+          "carryover": false
+        },
+        {
+          "category_id": "cat_util",
+          "budgeted": 22000,
+          "spent": -18000,
+          "carryover": false
+        },
+        {
+          "category_id": "cat_groc",
+          "budgeted": 50000,
+          "spent": -52000,
+          "carryover": false
+        },
+        {
+          "category_id": "cat_dine",
+          "budgeted": 20000,
+          "spent": -10000,
+          "carryover": false
+        }
+      ],
+      "expected": {
+        "month": "2026-02",
+        "total_income": 450000,
+        "from_last_month": 255000,
+        "available_funds": 705000,
+        "last_month_overspent": -5000,
+        "total_budgeted": 242000,
+        "total_spent": -230000,
+        "total_leftover": 22000,
+        "to_budget": 458000,
+        "category_balances": {
+          "cat_salary": {
+            "budgeted": 0,
+            "spent": 0,
+            "leftover": 0,
+            "carryover": false
+          },
+          "cat_rent": {
+            "budgeted": 150000,
+            "spent": -150000,
+            "leftover": 0,
+            "carryover": false
+          },
+          "cat_util": {
+            "budgeted": 22000,
+            "spent": -18000,
+            "leftover": 4000,
+            "carryover": false
+          },
+          "cat_groc": {
+            "budgeted": 50000,
+            "spent": -52000,
+            "leftover": 13000,
+            "carryover": false
+          },
+          "cat_dine": {
+            "budgeted": 20000,
+            "spent": -10000,
+            "leftover": 5000,
+            "carryover": false
+          }
+        },
+        "group_balances": {
+          "grp_income": {
+            "budgeted": 0,
+            "spent": 0,
+            "leftover": 0
+          },
+          "grp_bills": {
+            "budgeted": 172000,
+            "spent": -168000,
+            "leftover": 4000
+          },
+          "grp_everyday": {
+            "budgeted": 70000,
+            "spent": -62000,
+            "leftover": 18000
+          }
+        }
+      }
+    },
+    {
+      "month": "2026-03",
+      "uncategorized_income": 480000,
+      "allocations": [
+        {
+          "category_id": "cat_rent",
+          "budgeted": 150000,
+          "spent": -150000,
+          "carryover": false
+        },
+        {
+          "category_id": "cat_util",
+          "budgeted": 20000,
+          "spent": -19500,
+          "carryover": false
+        },
+        {
+          "category_id": "cat_groc",
+          "budgeted": 55000,
+          "spent": -48000,
+          "carryover": false
+        },
+        {
+          "category_id": "cat_dine",
+          "budgeted": 25000,
+          "spent": -21000,
+          "carryover": false
+        }
+      ],
+      "expected": {
+        "month": "2026-03",
+        "total_income": 480000,
+        "from_last_month": 458000,
+        "available_funds": 938000,
+        "last_month_overspent": 0,
+        "total_budgeted": 250000,
+        "total_spent": -238500,
+        "total_leftover": 33500,
+        "to_budget": 688000,
+        "category_balances": {
+          "cat_salary": {
+            "budgeted": 0,
+            "spent": 0,
+            "leftover": 0,
+            "carryover": false
+          },
+          "cat_rent": {
+            "budgeted": 150000,
+            "spent": -150000,
+            "leftover": 0,
+            "carryover": false
+          },
+          "cat_util": {
+            "budgeted": 20000,
+            "spent": -19500,
+            "leftover": 4500,
+            "carryover": false
+          },
+          "cat_groc": {
+            "budgeted": 55000,
+            "spent": -48000,
+            "leftover": 20000,
+            "carryover": false
+          },
+          "cat_dine": {
+            "budgeted": 25000,
+            "spent": -21000,
+            "leftover": 9000,
+            "carryover": false
+          }
+        },
+        "group_balances": {
+          "grp_income": {
+            "budgeted": 0,
+            "spent": 0,
+            "leftover": 0
+          },
+          "grp_bills": {
+            "budgeted": 170000,
+            "spent": -169500,
+            "leftover": 4500
+          },
+          "grp_everyday": {
+            "budgeted": 80000,
+            "spent": -69000,
+            "leftover": 29000
+          }
+        }
+      }
+    }
+  ]
+}

@@ -18,3 +18,5 @@ edition = "2021"
 license = "MIT"
 authors = ["rs-budget contributors"]
 repository = "https://github.com/itsvrushabh/rs-budget"
+homepage = "https://github.com/itsvrushabh/rs-budget"
+readme = "README.md"
