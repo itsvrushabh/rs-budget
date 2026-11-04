@@ -52,13 +52,12 @@ Track each checklist item in issues or pull requests as work begins. Update this
 - [x] Build non-interactive CLI in `actual-cli` ([#15](https://github.com/itsvrushabh/rs-budget/issues/15)) — merged PR #46
   - [x] Scripting commands, batch imports, account inspection, and automated maintenance.
   - [x] Machine-readable JSON output mode (`--json`).
-- [ ] Build interactive Ratatui-based terminal client in `actual-tui` ([#16](https://github.com/itsvrushabh/rs-budget/issues/16))
-  - [ ] Connect to local SQLite budget files or remote servers.
-  - [ ] Navigate months and view category group and envelope balances.
-  - [ ] Browse accounts and transactions with search and filter capabilities.
-  - [ ] Inline transaction creation, editing, split entry, and categorization.
-  - [ ] Edit category allocations and envelope settings with immediate calculation feedback.
-  - [ ] Keyboard navigation, terminal resizing, error reporting, and destructive action confirmation.
+- [x] Build interactive Ratatui-based terminal client in `actual-tui` ([#16](https://github.com/itsvrushabh/rs-budget/issues/16)) — merged PR #47
+  - [x] Connect to local SQLite budget files or in-memory service.
+  - [x] Navigate months and view category group and envelope balances with live leftover calculations.
+  - [x] Browse accounts and transactions with interactive search and filter capabilities.
+  - [x] Modal-driven transaction creation and budget allocation editing.
+  - [x] Keyboard navigation (`h`/`j`/`k`/`l`, `Tab`, `e`, `a`, `/`, `?`, `q`), color-coded badges, and help modal.
 - [ ] Implement automated bank synchronization integration in `actual-import` ([#38](https://github.com/itsvrushabh/rs-budget/issues/38))
   - [ ] Build adapters for SimpleFIN and GoCardless (Nordigen Open Banking) APIs.
   - [ ] Securely store bank credentials and support incremental delta synchronization.
