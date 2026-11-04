@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.actualbudget.actual</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Actual Budget</name>
+  <summary>Privacy-focused, 100% Rust local-first envelope budgeting app</summary>
+  <description>
+    <p>
+      Actual Budget is a 100% pure Rust rewrite of the popular personal finance system,
+      delivering local-first SQLite persistence, end-to-end AES-256-GCM encryption,
+      and conflict-free CRDT synchronization with self-hosted Axum servers.
+    </p>
+  </description>
+  <launchable type="desktop-id">actual.desktop</launchable>
+  <provides>
+    <mediatype>application/x-actual-budget</mediatype>
+  </provides>
+</component>

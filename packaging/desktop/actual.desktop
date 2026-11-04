@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Actual Budget
+GenericName=Personal Finance & Budgeting
+Comment=Privacy-first, local-first envelope budgeting application built in 100% Rust
+Exec=actual-desktop %f
+Icon=actual-budget
+Terminal=false
+Type=Application
+Categories=Office;Finance;
+MimeType=application/x-actual-budget;
+StartupWMClass=actual-desktop
+Keywords=finance;budget;envelope;money;accounting;

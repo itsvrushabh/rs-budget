@@ -3,6 +3,7 @@
 //! and UI framework evaluation for rs-budget.
 
 pub mod bridge;
+pub mod desktop;
 pub mod error;
 pub mod evaluation;
 pub mod navigation;
@@ -10,6 +11,10 @@ pub mod table;
 pub mod views;
 
 pub use bridge::GuiBridge;
+pub use desktop::{
+    ActiveTab, BackgroundSyncWorker, ColorPalette, DesktopApp, MenuAction, MenuBar, ThemeMode,
+    WindowConfig,
+};
 pub use error::GuiError;
 pub use evaluation::{
     EvaluationCriterion, FrameworkComparison, FrameworkEvaluation, PlatformTarget,
