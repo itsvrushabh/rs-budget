@@ -188,15 +188,18 @@ The 100% Rust self-hosted synchronization server runs on **port 5006** using Axu
 # Run via Cargo:
 cargo run --release -p actual-server
 
-# Or with Docker:
+# Run via Docker Compose (all-in-one sync server + web client):
+docker compose up -d
+
+# Or with Docker run:
 docker run -d \
   --name actual-server \
   -p 5006:5006 \
   -v ./budget-data:/data \
-  -e ACTUAL_PORT=5006 \
-  -e ACTUAL_DATA_DIR=/data \
-  itsvrushabh/rs-budget-server:latest
+  ghcr.io/itsvrushabh/rs-budget-server:latest
 ```
+
+For advanced deployments (Caddy, Traefik, Nginx, Podman Quadlet, Kubernetes Helm, Umbrel, CasaOS, Unraid, and Coolify), refer to the comprehensive [Self-Hosting Guide](docs/self-hosting.md).
 
 ---
 
@@ -243,6 +246,7 @@ actual --db budget.sqlite sync --server http://localhost:5006 --token "secret"
 ## 📚 Documentation & Guides
 
 - [Upstream Parity Matrix](docs/parity-matrix.md) — 100% upstream feature parity breakdown across all 6 phases.
+- [Self-Hosting Guide](docs/self-hosting.md) — Complete guide for Docker Compose, Podman, Kubernetes Helm, Umbrel, CasaOS, and reverse proxies.
 - [Migration Guide](docs/migration-guide.md) — Instructions for migrating existing budgets and sync servers.
 - [Configuration Reference](docs/configuration.md) — Server environment variables, CLI commands, and TUI keybindings.
 - [Release Notes (v0.1.0-preview)](docs/release-notes-v0.1.0-preview.md) — Public preview release details.

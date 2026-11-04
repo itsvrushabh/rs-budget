@@ -1,0 +1,20 @@
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: actual-server
+      APP_PORT: 5006
+
+  server:
+    image: ghcr.io/itsvrushabh/rs-budget-server:v0.1.0-preview
+    container_name: actual-server
+    restart: on-failure
+    stop_grace_period: 1m
+    environment:
+      - PORT=5006
+      - HOST=0.0.0.0
+      - ACTUAL_DATA_DIR=/data
+      - ACTUAL_WEB_DIR=/app/web
+    volumes:
+      - ${APP_DATA_DIR}/data:/data

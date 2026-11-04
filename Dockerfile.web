@@ -1,0 +1,51 @@
+# Standalone web client container for actual-web (rs-budget)
+# Serves static WebAssembly PWA shell behind a lightweight Nginx Alpine container.
+
+# Stage 1: Build web assets
+FROM rust:1.85-slim-bookworm AS builder
+
+WORKDIR /usr/src/rs-budget
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pkg-config \
+    libssl-dev \
+    protobuf-compiler \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY . .
+
+RUN cargo build --release --bin actual-web
+RUN /usr/src/rs-budget/target/release/actual-web export-dist --output /usr/src/rs-budget/web-dist
+
+# Stage 2: Serve via Nginx unprivileged Alpine
+FROM nginx:alpine-slim AS runtime
+
+COPY --from=builder /usr/src/rs-budget/web-dist /usr/share/nginx/html
+
+# Custom nginx server block supporting client-side SPA routing
+RUN printf 'server {\n\
+    listen 80;\n\
+    server_name _;\n\
+    root /usr/share/nginx/html;\n\
+    index index.html;\n\
+    location / {\n\
+        try_files $uri $uri/ /index.html;\n\
+    }\n\
+    location /sync/ {\n\
+        proxy_pass http://actual-server:5006/sync/;\n\
+        proxy_set_header Host $host;\n\
+        proxy_set_header X-Real-IP $remote_addr;\n\
+    }\n\
+    location /account/ {\n\
+        proxy_pass http://actual-server:5006/account/;\n\
+        proxy_set_header Host $host;\n\
+        proxy_set_header X-Real-IP $remote_addr;\n\
+    }\n\
+}\n' > /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost/index.html || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]

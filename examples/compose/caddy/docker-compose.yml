@@ -1,0 +1,42 @@
+services:
+  actual-server:
+    image: ghcr.io/itsvrushabh/rs-budget-server:latest
+    container_name: actual-server
+    restart: unless-stopped
+    environment:
+      - PORT=5006
+      - HOST=0.0.0.0
+      - ACTUAL_DATA_DIR=/data
+      - ACTUAL_WEB_DIR=/app/web
+    volumes:
+      - actual-data:/data
+    networks:
+      - budget-net
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: actual-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - BUDGET_DOMAIN=${BUDGET_DOMAIN:-budget.example.com}
+      - ACME_EMAIL=${ACME_EMAIL:-admin@example.com}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - budget-net
+    depends_on:
+      - actual-server
+
+volumes:
+  actual-data:
+  caddy-data:
+  caddy-config:
+
+networks:
+  budget-net:
+    driver: bridge

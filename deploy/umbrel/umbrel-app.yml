@@ -1,0 +1,23 @@
+manifestVersion: 1
+id: actual-budget-rust
+name: Actual Budget (Rust)
+tagline: 100% Rust local-first envelope budgeting app and sync server
+category: finance
+version: "0.1.0"
+port: 5006
+description: >-
+  Actual is a super fast, privacy-focused, local-first envelope budgeting tool.
+  This version is a high-performance 100% Rust rewrite with native SQLite WAL storage,
+  end-to-end AES-256-GCM encryption, CRDT synchronization, and a built-in web interface.
+developer: itsvrushabh
+website: https://github.com/itsvrushabh/rs-budget
+repo: https://github.com/itsvrushabh/rs-budget
+support: https://github.com/itsvrushabh/rs-budget/issues
+gallery: []
+releaseNotes: >-
+  Initial release of rs-budget for Umbrel OS with 100% upstream Actual Budget feature parity.
+dependencies: []
+path: ""
+defaultPassword: ""
+submitter: itsvrushabh
+submission: https://github.com/itsvrushabh/rs-budget

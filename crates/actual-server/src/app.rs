@@ -12,16 +12,23 @@ use crate::state::ServerState;
 use axum::extract::DefaultBodyLimit;
 use axum::routing::{get, post};
 use axum::Router;
+use std::path::PathBuf;
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::services::{ServeDir, ServeFile};
 
 /// Builds the complete Axum HTTP router with all sync, authentication, and archive endpoints.
 pub fn create_app(state: ServerState) -> Router {
+    create_app_with_options(state, None)
+}
+
+/// Builds the complete Axum HTTP router with optional static web client directory serving.
+pub fn create_app_with_options(state: ServerState, web_dir: Option<PathBuf>) -> Router {
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
         .allow_headers(Any);
 
-    Router::new()
+    let router = Router::new()
         // Account & Authentication
         .route("/account/needs-bootstrap", get(needs_bootstrap_handler))
         .route("/account/bootstrap", post(bootstrap_handler))
@@ -49,5 +56,19 @@ pub fn create_app(state: ServerState) -> Router {
         // Allow up to 50MB for encrypted budget backups
         .layer(DefaultBodyLimit::max(50 * 1024 * 1024))
         .layer(cors)
-        .with_state(state)
+        .with_state(state);
+
+    if let Some(dir) = web_dir {
+        if dir.exists() {
+            let index_file = dir.join("index.html");
+            if index_file.exists() {
+                return router
+                    .fallback_service(ServeDir::new(&dir).fallback(ServeFile::new(index_file)));
+            } else {
+                return router.fallback_service(ServeDir::new(&dir));
+            }
+        }
+    }
+
+    router
 }

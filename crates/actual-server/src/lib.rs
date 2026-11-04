@@ -7,6 +7,6 @@ pub mod error;
 pub mod routes;
 pub mod state;
 
-pub use app::create_app;
+pub use app::{create_app, create_app_with_options};
 pub use error::ServerError;
 pub use state::ServerState;
