@@ -89,8 +89,8 @@ Track each checklist item in issues or pull requests as work begins. Update this
 
 ## Phase 6 — Parity, migration, and cutover
 
-- [ ] Parity validation, migration testing, and public preview release ([#24](https://github.com/itsvrushabh/rs-budget/issues/24))
-  - [ ] Pass full feature matrix and integration verification across CLI, TUI, Server, and Graphical clients.
-  - [ ] Test cross-version upgrades, automated backups, and recovery on real-world anonymized budgets.
-  - [ ] Ship an opt-in preview release for community validation and feedback.
-  - [ ] Finalize documentation, user migration guides, and production release pipeline.
+- [x] Parity validation, migration testing, and public preview release ([#24](https://github.com/itsvrushabh/rs-budget/issues/24)) — merged PR #63
+  - [x] Pass full feature matrix and integration verification across CLI, TUI, Server, and Graphical clients.
+  - [x] Test cross-version upgrades, automated backups, and recovery on real-world anonymized budgets.
+  - [x] Ship an opt-in preview release for community validation and feedback.
+  - [x] Finalize documentation, user migration guides, and production release pipeline.
