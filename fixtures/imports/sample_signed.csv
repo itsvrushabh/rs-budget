@@ -1,0 +1,4 @@
+Date,Payee,Memo,Amount,Category,TransactionID
+2024-05-01,POS PURCHASE UBER EATS #882,Dinner,-24.50,Dining,CSV-TX-001
+2024-05-05,PAYPAL *GITHUB,Developer tools,-10.00,Software,CSV-TX-002
+2024-05-15,DIRECT DEP CLIENT CONSULTING,Invoice payment,3200.00,Income,CSV-TX-003
