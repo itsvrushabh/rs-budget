@@ -9,7 +9,9 @@ dependencies = [
  "actual-core",
  "actual-storage",
  "actual-sync",
+ "chrono",
  "thiserror",
+ "uuid",
 ]
 
 [[package]]

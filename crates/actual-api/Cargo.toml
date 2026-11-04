@@ -12,3 +12,5 @@ actual-core = { path = "../actual-core", version = "0.1.0" }
 actual-storage = { path = "../actual-storage", version = "0.1.0" }
 actual-sync = { path = "../actual-sync", version = "0.1.0" }
 thiserror = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4"] }
