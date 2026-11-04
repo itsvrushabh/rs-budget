@@ -70,9 +70,9 @@ Track each checklist item in issues or pull requests as work begins. Update this
 - [x] Implement full budget file encryption packaging, backup archives, and key rotation ([#39](https://github.com/itsvrushabh/rs-budget/issues/39)) — merged PR #52
   - [x] Encrypt raw SQLite budget files into `.actual` transportable archives using AES-256-GCM.
   - [x] Support re-encrypting budget databases and CRDT logs under an updated user passphrase (`KeyRotator`).
-- [ ] Build 100% Rust self-hosted sync server with Axum in `actual-server` ([#18](https://github.com/itsvrushabh/rs-budget/issues/18))
-  - [ ] User authentication, encryption key exchange, budget metadata, and sync endpoints (`/sync/sync`).
-  - [ ] Multi-architecture Docker container images (`linux/amd64`, `linux/arm64`).
+- [x] Build 100% Rust self-hosted sync server with Axum in `actual-server` ([#18](https://github.com/itsvrushabh/rs-budget/issues/18)) — merged PR #53
+  - [x] User authentication, encryption key exchange, budget metadata, and sync endpoints (`/sync/sync`).
+  - [x] Multi-architecture Docker container images (`linux/amd64`, `linux/arm64`).
 - [ ] Cross-client sync interoperability tests with official Actual clients and server ([#19](https://github.com/itsvrushabh/rs-budget/issues/19))
   - [ ] End-to-end multi-device sync, conflict scenarios, and offline reconnects.
 
