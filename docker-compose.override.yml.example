@@ -1,0 +1,18 @@
+# Example local override for docker-compose.yml
+# Copy to docker-compose.override.yml to customize configuration without modifying the base file.
+
+services:
+  actual-server:
+    # Bind to custom port on the host
+    ports:
+      - "5006:5006"
+
+    # Use a specific local directory instead of a named volume
+    volumes:
+      - ./my-local-budget-data:/data
+
+    environment:
+      # Pre-seed server master password (omit to initialize through the web onboarding flow)
+      - ACTUAL_SERVER_PASSWORD=change-me-to-a-secure-password
+      # Log verbosity: error, warn, info, debug, trace
+      - RUST_LOG=actual_server=info,tower_http=info

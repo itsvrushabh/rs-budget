@@ -339,3 +339,64 @@ async fn test_server_crdt_sync_endpoint() {
     let decoded_msg_b = CrdtMessage::from_envelope(&sync_resp_a2.messages[0], Some(&key)).unwrap();
     assert_eq!(decoded_msg_b, msg_b);
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_server_static_web_assets_and_spa_fallback() {
+    use actual_server::create_app_with_options;
+    use std::fs;
+    use tempfile::tempdir;
+
+    let temp_web = tempdir().expect("temp web dir");
+    let index_content = "<!DOCTYPE html><html><body><h1>Actual Budget Web</h1></body></html>";
+    fs::write(temp_web.path().join("index.html"), index_content).expect("write index.html");
+
+    fs::create_dir_all(temp_web.path().join("assets")).expect("create assets dir");
+    let js_content = "console.log('rs-budget');";
+    fs::write(temp_web.path().join("assets/app.js"), js_content).expect("write app.js");
+
+    let state = ServerState::open_in_memory().expect("in-memory state");
+    let app = create_app_with_options(state, Some(temp_web.path().to_path_buf()));
+
+    let listener = TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("bind free port");
+    let addr = listener.local_addr().expect("local addr");
+    let base_url = format!("http://{}", addr);
+
+    tokio::spawn(async move {
+        axum::serve(listener, app).await.expect("serve app");
+    });
+    tokio::time::sleep(Duration::from_millis(15)).await;
+
+    // 1. GET / returns index.html
+    let root_resp = ureq::get(&format!("{base_url}/"))
+        .call()
+        .expect("root req")
+        .into_string()
+        .expect("read body");
+    assert_eq!(root_resp, index_content);
+
+    // 2. GET /assets/app.js returns static asset
+    let js_resp = ureq::get(&format!("{base_url}/assets/app.js"))
+        .call()
+        .expect("asset req")
+        .into_string()
+        .expect("read body");
+    assert_eq!(js_resp, js_content);
+
+    // 3. GET /budget/2026-11 (SPA client-side navigation route) falls back to index.html
+    let spa_resp = ureq::get(&format!("{base_url}/budget/2026-11"))
+        .call()
+        .expect("spa fallback req")
+        .into_string()
+        .expect("read body");
+    assert_eq!(spa_resp, index_content);
+
+    // 4. API endpoints remain fully functional and take priority over static fallback
+    let api_resp: Value = ureq::get(&format!("{base_url}/account/needs-bootstrap"))
+        .call()
+        .expect("api req")
+        .into_json()
+        .expect("parse json");
+    assert_eq!(api_resp["data"]["bootstrapped"], false);
+}

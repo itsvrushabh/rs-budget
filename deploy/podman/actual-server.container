@@ -1,0 +1,28 @@
+# Podman Quadlet configuration for actual-server (rs-budget)
+# Place in ~/.config/containers/systemd/ (rootless) or /etc/containers/systemd/ (system)
+# Then run: systemctl --user daemon-reload && systemctl --user start actual-server
+
+[Unit]
+Description=Actual Budget Rust Sync Server & Web UI
+After=network-online.target
+
+[Container]
+Image=ghcr.io/itsvrushabh/rs-budget-server:latest
+ContainerName=actual-server
+PublishPort=5006:5006
+Volume=actual-data:/data:Z
+Environment=PORT=5006
+Environment=HOST=0.0.0.0
+Environment=ACTUAL_DATA_DIR=/data
+Environment=ACTUAL_WEB_DIR=/app/web
+HealthCmd=curl -f http://localhost:5006/account/needs-bootstrap || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+AutoUpdate=registry
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target
