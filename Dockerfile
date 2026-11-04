@@ -3,7 +3,7 @@
 # Provides an all-in-one container serving both the sync engine API and the web client PWA on port 5006.
 
 # Stage 1: Build binaries and web distribution assets
-FROM rust:1.85-slim-bookworm AS builder
+FROM rust:slim-bookworm AS builder
 
 WORKDIR /usr/src/rs-budget
 

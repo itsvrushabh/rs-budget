@@ -2,7 +2,7 @@
 # Serves static WebAssembly PWA shell behind a lightweight Nginx Alpine container.
 
 # Stage 1: Build web assets
-FROM rust:1.85-slim-bookworm AS builder
+FROM rust:slim-bookworm AS builder
 
 WORKDIR /usr/src/rs-budget
 
