@@ -78,8 +78,8 @@ Track each checklist item in issues or pull requests as work begins. Update this
 
 ## Phase 5 — 100% Rust native graphical clients
 
-- [ ] Prototype and evaluate pure Rust cross-platform GUI toolkit in `actual-gui` ([#20](https://github.com/itsvrushabh/rs-budget/issues/20))
-  - [ ] Evaluate Slint / Dioxus against table editing, keyboard navigation, and accessibility.
+- [x] Prototype and evaluate pure Rust cross-platform GUI toolkit in `actual-gui` ([#20](https://github.com/itsvrushabh/rs-budget/issues/20)) — merged PR #57
+  - [x] Evaluate Slint / Dioxus against table editing, keyboard navigation, and accessibility.
 - [ ] Build native Desktop client for Linux, macOS, and Windows ([#21](https://github.com/itsvrushabh/rs-budget/issues/21))
   - [ ] Offline-first SQLite support and native OS packaging.
 - [ ] Build Web client compiled to WebAssembly (WASM with OPFS) ([#22](https://github.com/itsvrushabh/rs-budget/issues/22))
