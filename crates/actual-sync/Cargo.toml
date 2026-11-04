@@ -9,6 +9,10 @@ homepage.workspace = true
 
 [dependencies]
 actual-core = { path = "../actual-core", version = "0.1.0" }
+actual-crypto = { path = "../actual-crypto", version = "0.1.0" }
+rusqlite = { version = "0.31", features = ["bundled"] }
+ureq = { version = "2.10", features = ["json"] }
+base64 = "0.22"
 prost = "0.13"
 thiserror = "1.0"
 chrono = { version = "0.4", features = ["serde"] }

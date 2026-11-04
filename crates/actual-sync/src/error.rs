@@ -45,7 +45,23 @@ pub enum SyncError {
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
 
+    /// SQLite database error.
+    #[error("SQLite database error: {0}")]
+    Database(#[from] rusqlite::Error),
+
+    /// Cryptography error.
+    #[error("cryptography error: {0}")]
+    Crypto(#[from] actual_crypto::CryptoError),
+
+    /// Network error during sync transmission.
+    #[error("network sync error: {0}")]
+    Network(String),
+
     /// Invalid Merkle tree key or base-3 structure.
     #[error("invalid Merkle tree key: {0}")]
     InvalidMerkleKey(String),
+
+    /// Conflict resolution or data invariant failure.
+    #[error("sync conflict error: {0}")]
+    Conflict(String),
 }
