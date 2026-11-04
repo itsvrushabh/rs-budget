@@ -207,6 +207,30 @@ impl BudgetService {
             }
         }
 
+        // Load zero_budgets allocations
+        {
+            let mut stmt = self
+                .store
+                .conn()
+                .prepare("SELECT month, category, amount, carryover FROM zero_budgets")?;
+            let rows = stmt.query_map([], |row| {
+                let month_int: i32 = row.get(0)?;
+                let cat_id: String = row.get(1)?;
+                let amount: i64 = row.get(2)?;
+                let carryover: bool = row.get::<_, i32>(3)? != 0;
+                let year = month_int / 100;
+                let month = month_int % 100;
+                let month_str = format!("{year:04}-{month:02}");
+                Ok((month_str, cat_id, amount, carryover))
+            })?;
+            for r in rows {
+                let (month_str, cat_id, amount, carryover) = r?;
+                self.budget
+                    .set_budget(&month_str, &cat_id, actual_core::Cents::from_cents(amount));
+                self.budget.set_carryover(&month_str, &cat_id, carryover);
+            }
+        }
+
         Ok(())
     }
 
@@ -440,6 +464,14 @@ impl BudgetService {
         } else {
             CategoryGroup::new(&id, &cmd.name)
         };
+        self.store
+            .conn()
+            .execute(
+                "INSERT INTO category_groups (id, name, is_income, tombstone) VALUES (?1, ?2, ?3, 0)
+                 ON CONFLICT(id) DO UPDATE SET name=excluded.name, is_income=excluded.is_income, tombstone=excluded.tombstone",
+                rusqlite::params![id, group.name, group.is_income as i32],
+            )
+            .map_err(actual_storage::StorageError::from)?;
         self.category_groups.insert(id.clone(), group);
         self.undo.push(UndoEntry::CategoryGroupCreated {
             group_id: id.clone(),
@@ -461,6 +493,14 @@ impl BudgetService {
             cmd.id.clone()
         };
         let category = Category::new(&id, &cmd.name, &cmd.group_id);
+        self.store
+            .conn()
+            .execute(
+                "INSERT INTO categories (id, name, cat_group, is_income, tombstone) VALUES (?1, ?2, ?3, ?4, 0)
+                 ON CONFLICT(id) DO UPDATE SET name=excluded.name, cat_group=excluded.cat_group, is_income=excluded.is_income, tombstone=excluded.tombstone",
+                rusqlite::params![id, category.name, category.group_id, category.is_income as i32],
+            )
+            .map_err(actual_storage::StorageError::from)?;
         self.categories.insert(id.clone(), category);
         self.undo.push(UndoEntry::CategoryCreated {
             category_id: id.clone(),
@@ -478,6 +518,13 @@ impl BudgetService {
             .get(&cmd.category_id)
             .ok_or_else(|| ApiError::CategoryNotFound(cmd.category_id.clone()))?;
         let undo_entry = UndoManager::snapshot_category_rename(cat);
+        self.store
+            .conn()
+            .execute(
+                "UPDATE categories SET name = ?1 WHERE id = ?2",
+                rusqlite::params![cmd.new_name, cmd.category_id],
+            )
+            .map_err(actual_storage::StorageError::from)?;
         self.categories.get_mut(&cmd.category_id).unwrap().name = cmd.new_name;
         self.undo.push(undo_entry);
         Ok(())
@@ -533,6 +580,13 @@ impl BudgetService {
             .ok_or_else(|| ApiError::CategoryNotFound(cmd.category_id.clone()))?;
         let restored = cat.clone();
         cat.tombstone = true;
+        self.store
+            .conn()
+            .execute(
+                "UPDATE categories SET tombstone = 1 WHERE id = ?1",
+                rusqlite::params![cmd.category_id],
+            )
+            .map_err(actual_storage::StorageError::from)?;
         self.undo.push(UndoEntry::CategoryDeleted { restored });
         Ok(())
     }
@@ -552,6 +606,18 @@ impl BudgetService {
             .get_category_budget(&cmd.month, &cmd.category_id);
         self.budget
             .set_budget(&cmd.month, &cmd.category_id, cmd.amount);
+
+        let month_int: i32 = cmd.month.replace('-', "").parse().unwrap_or(0);
+        let budget_id = format!("{}-{}", cmd.month, cmd.category_id);
+        self.store
+            .conn()
+            .execute(
+                "INSERT INTO zero_budgets (id, month, category, amount) VALUES (?1, ?2, ?3, ?4)
+                 ON CONFLICT(id) DO UPDATE SET amount=excluded.amount",
+                rusqlite::params![budget_id, month_int, cmd.category_id, cmd.amount.as_cents()],
+            )
+            .map_err(actual_storage::StorageError::from)?;
+
         self.undo.push(UndoEntry::BudgetSet {
             month: cmd.month,
             category_id: cmd.category_id,
@@ -573,6 +639,18 @@ impl BudgetService {
             .get_category_carryover(&cmd.month, &cmd.category_id);
         self.budget
             .set_carryover(&cmd.month, &cmd.category_id, cmd.carry);
+
+        let month_int: i32 = cmd.month.replace('-', "").parse().unwrap_or(0);
+        let budget_id = format!("{}-{}", cmd.month, cmd.category_id);
+        self.store
+            .conn()
+            .execute(
+                "INSERT INTO zero_budgets (id, month, category, carryover) VALUES (?1, ?2, ?3, ?4)
+                 ON CONFLICT(id) DO UPDATE SET carryover=excluded.carryover",
+                rusqlite::params![budget_id, month_int, cmd.category_id, cmd.carry as i32],
+            )
+            .map_err(actual_storage::StorageError::from)?;
+
         self.undo.push(UndoEntry::CarryoverSet {
             month: cmd.month,
             category_id: cmd.category_id,
