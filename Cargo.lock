@@ -65,6 +65,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "actual-gui"
+version = "0.1.0"
+dependencies = [
+ "actual-api",
+ "actual-core",
+ "actual-storage",
+ "actual-sync",
+ "chrono",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "unicode-segmentation",
+ "unicode-width",
+]
+
+[[package]]
 name = "actual-import"
 version = "0.1.0"
 dependencies = [
