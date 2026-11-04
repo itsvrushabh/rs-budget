@@ -8,6 +8,7 @@ pub mod bridge;
 pub mod desktop;
 pub mod error;
 pub mod evaluation;
+pub mod mobile;
 pub mod navigation;
 pub mod table;
 pub mod views;
@@ -23,6 +24,11 @@ pub use desktop::{
 pub use error::GuiError;
 pub use evaluation::{
     EvaluationCriterion, FrameworkComparison, FrameworkEvaluation, PlatformTarget,
+};
+pub use mobile::{
+    AndroidPackagingConfig, BottomNavBar, DeviceFormFactor, Gesture, GestureClassifier,
+    IosPackagingConfig, KeypadKey, KeypadState, MobileApp, MobileTab, MobileViewport,
+    QuickAddSheet, SafeAreaInsets, ScreenOrientation, TouchPhase, TouchPoint,
 };
 pub use navigation::{ImeBuffer, KeyAction, KeyboardNavigator};
 pub use table::{
