@@ -1,0 +1,53 @@
+//! Axum application construction, middleware configuration, and router assembly.
+
+use crate::auth::{bootstrap_handler, login_handler, needs_bootstrap_handler, validate_handler};
+use crate::routes::keys::{create_key_handler, get_key_handler};
+use crate::routes::sync::sync_handler;
+use crate::routes::user_files::{
+    delete_user_file_handler, download_user_file_handler, get_user_file_info_handler,
+    list_user_files_handler, reset_user_file_handler, update_user_filename_handler,
+    upload_user_file_handler,
+};
+use crate::state::ServerState;
+use axum::extract::DefaultBodyLimit;
+use axum::routing::{get, post};
+use axum::Router;
+use tower_http::cors::{Any, CorsLayer};
+
+/// Builds the complete Axum HTTP router with all sync, authentication, and archive endpoints.
+pub fn create_app(state: ServerState) -> Router {
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
+    Router::new()
+        // Account & Authentication
+        .route("/account/needs-bootstrap", get(needs_bootstrap_handler))
+        .route("/account/bootstrap", post(bootstrap_handler))
+        .route("/account/login", post(login_handler))
+        .route("/account/validate", post(validate_handler))
+        // CRDT Sync
+        .route("/sync/sync", post(sync_handler))
+        .route("/sync", post(sync_handler))
+        // User Files / Backups
+        .route("/sync/upload-user-file", post(upload_user_file_handler))
+        .route("/sync/download-user-file", get(download_user_file_handler))
+        .route("/sync/list-user-files", get(list_user_files_handler))
+        .route("/sync/get-user-file-info", get(get_user_file_info_handler))
+        .route(
+            "/sync/update-user-filename",
+            post(update_user_filename_handler),
+        )
+        .route("/sync/delete-user-file", post(delete_user_file_handler))
+        .route("/sync/reset-user-file", post(reset_user_file_handler))
+        // Key Management
+        .route("/user/get-key", post(get_key_handler))
+        .route("/user-get-key", post(get_key_handler))
+        .route("/user/create-key", post(create_key_handler))
+        .route("/user-create-key", post(create_key_handler))
+        // Allow up to 50MB for encrypted budget backups
+        .layer(DefaultBodyLimit::max(50 * 1024 * 1024))
+        .layer(cors)
+        .with_state(state)
+}
