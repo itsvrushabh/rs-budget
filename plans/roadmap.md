@@ -38,8 +38,8 @@ Track each checklist item in issues or pull requests as work begins. Update this
 - [x] Build differential testing harness comparing rs-budget against Node.js Actual ([#12](https://github.com/itsvrushabh/rs-budget/issues/12)) — merged PR #40
   - [ ] Run identical transaction streams through upstream Node.js Actual and Rust `actual-core`.
   - [ ] Assert identical balances, envelope numbers, and reports.
-- [ ] Expose query, mutation, and undo behavior behind typed APIs in `actual-api` ([#13](https://github.com/itsvrushabh/rs-budget/issues/13))
-  - [ ] Implement command/mutation interfaces and undo/redo state restoration.
+- [x] Expose query, mutation, and undo behavior behind typed APIs in `actual-api` ([#13](https://github.com/itsvrushabh/rs-budget/issues/13)) — merged PR #41
+  - [x] Implement command/mutation interfaces and undo/redo state restoration.
 - [ ] Implement financial reporting, net worth, and cash flow analytics engine in `actual-core` ([#37](https://github.com/itsvrushabh/rs-budget/issues/37))
   - [ ] Calculate net worth progression (assets vs liabilities) over configurable timeframes.
   - [ ] Generate monthly cash flow summaries, spending breakdowns by category group, and custom filtered analytics.
