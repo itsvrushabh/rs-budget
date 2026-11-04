@@ -67,9 +67,9 @@ Track each checklist item in issues or pull requests as work begins. Update this
 - [x] Implement complete client CRDT sync logic in `actual-sync` ([#17](https://github.com/itsvrushabh/rs-budget/issues/17)) — merged PR #51
   - [x] Message log management (`messages_crdt`), Merkle tree range diffing (`diff_merkle`), and Last-Write-Wins (LWW) conflict resolution.
   - [x] Offline queueing, exponential backoff, and network reconnect logic.
-- [ ] Implement full budget file encryption packaging, backup archives, and key rotation ([#39](https://github.com/itsvrushabh/rs-budget/issues/39))
-  - [ ] Encrypt raw SQLite budget files into `.actual` transportable archives using AES-256-GCM.
-  - [ ] Support re-encrypting budget databases and CRDT logs under an updated user passphrase.
+- [x] Implement full budget file encryption packaging, backup archives, and key rotation ([#39](https://github.com/itsvrushabh/rs-budget/issues/39)) — merged PR #52
+  - [x] Encrypt raw SQLite budget files into `.actual` transportable archives using AES-256-GCM.
+  - [x] Support re-encrypting budget databases and CRDT logs under an updated user passphrase (`KeyRotator`).
 - [ ] Build 100% Rust self-hosted sync server with Axum in `actual-server` ([#18](https://github.com/itsvrushabh/rs-budget/issues/18))
   - [ ] User authentication, encryption key exchange, budget metadata, and sync endpoints (`/sync/sync`).
   - [ ] Multi-architecture Docker container images (`linux/amd64`, `linux/arm64`).
