@@ -46,9 +46,9 @@ Track each checklist item in issues or pull requests as work begins. Update this
 
 ## Phase 3 — Prioritized CLI, TUI, and import workflows
 
-- [ ] Implement financial format parsers in `actual-import` ([#14](https://github.com/itsvrushabh/rs-budget/issues/14))
-  - [ ] Port QIF, OFX, and CSV workflows verified against upstream format fixtures.
-  - [ ] Implement transaction deduplication and payee matching.
+- [x] Implement financial format parsers in `actual-import` ([#14](https://github.com/itsvrushabh/rs-budget/issues/14)) — merged PR #45
+  - [x] Port QIF, OFX, and CSV workflows verified against upstream format fixtures.
+  - [x] Implement transaction deduplication and payee matching.
 - [ ] Build non-interactive CLI in `actual-cli` ([#15](https://github.com/itsvrushabh/rs-budget/issues/15))
   - [ ] Scripting commands, batch imports, account inspection, and automated maintenance.
   - [ ] Machine-readable JSON output mode (`--json`).
