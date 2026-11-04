@@ -118,8 +118,11 @@ version = "0.1.0"
 dependencies = [
  "actual-api",
  "actual-core",
+ "chrono",
+ "clap",
  "crossterm",
  "ratatui",
+ "uuid",
 ]
 
 [[package]]
