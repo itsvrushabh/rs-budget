@@ -43,4 +43,7 @@ pub enum ApiError {
 
     #[error("storage error: {0}")]
     Storage(#[from] actual_storage::StorageError),
+
+    #[error("sqlite error: {0}")]
+    Sqlite(#[from] rusqlite::Error),
 }

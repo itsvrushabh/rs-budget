@@ -10,6 +10,7 @@ dependencies = [
  "actual-storage",
  "actual-sync",
  "chrono",
+ "rusqlite",
  "thiserror",
  "uuid",
 ]
@@ -20,8 +21,14 @@ version = "0.1.0"
 dependencies = [
  "actual-api",
  "actual-core",
+ "actual-import",
  "actual-storage",
+ "chrono",
  "clap",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "uuid",
 ]
 
 [[package]]
