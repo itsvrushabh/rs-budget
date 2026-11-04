@@ -51,7 +51,9 @@ impl BudgetService {
     /// Returns [`ApiError::Storage`] if the database cannot be opened or migrated.
     pub fn open(path: impl AsRef<std::path::Path>) -> Result<Self, ApiError> {
         let store = SqliteStore::open(path)?;
-        Ok(Self::from_store(store))
+        let mut svc = Self::from_store(store);
+        svc.load_from_sqlite()?;
+        Ok(svc)
     }
 
     /// Open an in-memory budget (useful for tests and ephemeral sessions).
@@ -60,7 +62,152 @@ impl BudgetService {
     /// Returns [`ApiError::Storage`] if the in-memory database cannot be initialised.
     pub fn open_in_memory() -> Result<Self, ApiError> {
         let store = SqliteStore::open_in_memory()?;
-        Ok(Self::from_store(store))
+        let mut svc = Self::from_store(store);
+        svc.load_from_sqlite()?;
+        Ok(svc)
+    }
+
+    fn load_from_sqlite(&mut self) -> Result<(), ApiError> {
+        // Load category groups
+        {
+            let mut stmt = self
+                .store
+                .conn()
+                .prepare("SELECT id, name, is_income, tombstone FROM category_groups")?;
+            let rows = stmt.query_map([], |row| {
+                let id: String = row.get(0)?;
+                let name: String = row.get(1)?;
+                let is_income: bool = row.get::<_, i32>(2)? != 0;
+                let tombstone: bool = row.get::<_, i32>(3)? != 0;
+                let mut grp = if is_income {
+                    CategoryGroup::new_income(&id, &name)
+                } else {
+                    CategoryGroup::new(&id, &name)
+                };
+                grp.tombstone = tombstone;
+                Ok((id, grp))
+            })?;
+            for r in rows {
+                let (id, grp) = r?;
+                self.category_groups.insert(id, grp);
+            }
+        }
+
+        // Load categories
+        {
+            let mut stmt = self
+                .store
+                .conn()
+                .prepare("SELECT id, name, cat_group, is_income, tombstone FROM categories")?;
+            let rows = stmt.query_map([], |row| {
+                let id: String = row.get(0)?;
+                let name: String = row.get(1)?;
+                let group_id: String = row.get::<_, Option<String>>(2)?.unwrap_or_default();
+                let is_income: bool = row.get::<_, i32>(3)? != 0;
+                let tombstone: bool = row.get::<_, i32>(4)? != 0;
+                let mut cat = Category::new(&id, &name, &group_id);
+                cat.is_income = is_income;
+                cat.tombstone = tombstone;
+                Ok((id, cat))
+            })?;
+            for r in rows {
+                let (id, cat) = r?;
+                self.categories.insert(id, cat);
+            }
+        }
+
+        // Load payees
+        {
+            let mut stmt = self
+                .store
+                .conn()
+                .prepare("SELECT id, name, transfer_acct, tombstone FROM payees")?;
+            let rows = stmt.query_map([], |row| {
+                let id: String = row.get(0)?;
+                let name: String = row.get(1)?;
+                let transfer_acct: Option<String> = row.get(2)?;
+                let tombstone: bool = row.get::<_, i32>(3)? != 0;
+                let mut p = Payee::new(&id, &name);
+                p.transfer_acct = transfer_acct;
+                p.tombstone = tombstone;
+                Ok((id, p))
+            })?;
+            for r in rows {
+                let (id, p) = r?;
+                self.payees.insert(id, p);
+            }
+        }
+
+        // Load accounts
+        {
+            let mut stmt = self
+                .store
+                .conn()
+                .prepare("SELECT id, name, offbudget, closed, tombstone FROM accounts")?;
+            let rows = stmt.query_map([], |row| {
+                let id: String = row.get(0)?;
+                let name: String = row.get(1)?;
+                let offbudget: bool = row.get::<_, i32>(2)? != 0;
+                let closed: bool = row.get::<_, i32>(3)? != 0;
+                let tombstone: bool = row.get::<_, i32>(4)? != 0;
+                let mut acc = Account::new(&id, &name);
+                acc.offbudget = offbudget;
+                acc.closed = closed;
+                acc.tombstone = tombstone;
+                Ok((id, acc))
+            })?;
+            for r in rows {
+                let (id, acc) = r?;
+                self.accounts.insert(id, acc);
+            }
+        }
+
+        // Load transactions
+        {
+            let mut stmt = self.store.conn().prepare(
+                "SELECT id, acct, date, amount, description, notes, category, financial_id, imported_description, cleared, tombstone FROM transactions",
+            )?;
+            let rows = stmt.query_map([], |row| {
+                let id: String = row.get(0)?;
+                let acct: String = row.get(1)?;
+                let date_int: i32 = row.get(2)?;
+                let amount_cents: i64 = row.get(3)?;
+                let payee_id: Option<String> = row.get(4)?;
+                let notes: Option<String> = row.get(5)?;
+                let category_id: Option<String> = row.get(6)?;
+                let imported_id: Option<String> = row.get(7)?;
+                let imported_payee: Option<String> = row.get(8)?;
+                let cleared: bool = row.get::<_, i32>(9)? != 0;
+                let tombstone: bool = row.get::<_, i32>(10)? != 0;
+
+                let year = date_int / 10000;
+                let month = (date_int % 10000) / 100;
+                let day = date_int % 100;
+                let date = chrono::NaiveDate::from_ymd_opt(year, month as u32, day as u32)
+                    .unwrap_or_else(|| chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap());
+
+                let mut tx = Transaction::new(
+                    &id,
+                    &acct,
+                    date,
+                    actual_core::Cents::from_cents(amount_cents),
+                );
+                tx.payee_id = payee_id;
+                tx.notes = notes;
+                tx.category_id = category_id;
+                tx.imported_id = imported_id;
+                tx.imported_payee = imported_payee;
+                tx.cleared = cleared;
+                tx.tombstone = tombstone;
+                Ok((id, tx))
+            })?;
+            for r in rows {
+                let (id, tx) = r?;
+                self.transactions.insert(id, tx);
+            }
+        }
+
+        Ok(())
     }
 
     fn from_store(store: SqliteStore) -> Self {
@@ -128,6 +275,11 @@ impl BudgetService {
         };
         let mut account = Account::new(&id, &cmd.name);
         account.offbudget = cmd.offbudget;
+        self.store.conn().execute(
+            "INSERT INTO accounts (id, name, offbudget, closed, tombstone) VALUES (?1, ?2, ?3, 0, 0)
+             ON CONFLICT(id) DO UPDATE SET name=excluded.name, offbudget=excluded.offbudget, closed=excluded.closed, tombstone=excluded.tombstone",
+            rusqlite::params![id, account.name, account.offbudget as i32],
+        ).map_err(actual_storage::StorageError::from)?;
         self.accounts.insert(id.clone(), account);
         self.undo.push(UndoEntry::AccountCreated {
             account_id: id.clone(),
@@ -145,6 +297,13 @@ impl BudgetService {
             .get(&cmd.account_id)
             .ok_or_else(|| ApiError::AccountNotFound(cmd.account_id.clone()))?;
         let undo_entry = UndoManager::snapshot_account_rename(account);
+        self.store
+            .conn()
+            .execute(
+                "UPDATE accounts SET name = ?1 WHERE id = ?2",
+                rusqlite::params![cmd.new_name, cmd.account_id],
+            )
+            .map_err(actual_storage::StorageError::from)?;
         let account = self.accounts.get_mut(&cmd.account_id).unwrap();
         account.name = cmd.new_name;
         self.undo.push(undo_entry);
@@ -160,6 +319,13 @@ impl BudgetService {
             .accounts
             .get_mut(&cmd.account_id)
             .ok_or_else(|| ApiError::AccountNotFound(cmd.account_id.clone()))?;
+        self.store
+            .conn()
+            .execute(
+                "UPDATE accounts SET closed = 1 WHERE id = ?1",
+                rusqlite::params![cmd.account_id],
+            )
+            .map_err(actual_storage::StorageError::from)?;
         account.closed = true;
         self.undo.push(UndoEntry::AccountClosed {
             account_id: cmd.account_id,
@@ -176,6 +342,13 @@ impl BudgetService {
             .accounts
             .get_mut(&cmd.account_id)
             .ok_or_else(|| ApiError::AccountNotFound(cmd.account_id.clone()))?;
+        self.store
+            .conn()
+            .execute(
+                "UPDATE accounts SET closed = 0 WHERE id = ?1",
+                rusqlite::params![cmd.account_id],
+            )
+            .map_err(actual_storage::StorageError::from)?;
         account.closed = false;
         self.undo.push(UndoEntry::AccountReopened {
             account_id: cmd.account_id,
@@ -439,6 +612,25 @@ impl BudgetService {
             );
         }
 
+        let date_int: i32 = tx.date.format("%Y%m%d").to_string().parse().unwrap_or(0);
+        self.store.conn().execute(
+            "INSERT INTO transactions (id, acct, date, amount, description, notes, category, financial_id, imported_description, cleared, tombstone)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 0)
+             ON CONFLICT(id) DO UPDATE SET acct=excluded.acct, date=excluded.date, amount=excluded.amount, description=excluded.description, notes=excluded.notes, category=excluded.category, financial_id=excluded.financial_id, imported_description=excluded.imported_description, cleared=excluded.cleared, tombstone=excluded.tombstone",
+            rusqlite::params![
+                tx.id,
+                tx.account_id,
+                date_int,
+                tx.amount.as_cents(),
+                tx.payee_id,
+                tx.notes,
+                tx.category_id,
+                tx.imported_id,
+                tx.imported_payee,
+                tx.cleared as i32,
+            ],
+        ).map_err(actual_storage::StorageError::from)?;
+
         self.transactions.insert(id.clone(), tx);
         self.undo.push(UndoEntry::TransactionAdded {
             transaction_id: id.clone(),
@@ -490,6 +682,13 @@ impl BudgetService {
             .transactions
             .get_mut(&cmd.transaction_id)
             .ok_or_else(|| ApiError::TransactionNotFound(cmd.transaction_id.clone()))?;
+        self.store
+            .conn()
+            .execute(
+                "UPDATE transactions SET tombstone = 1 WHERE id = ?1",
+                rusqlite::params![cmd.transaction_id],
+            )
+            .map_err(actual_storage::StorageError::from)?;
         let restored = tx.clone();
         tx.tombstone = true;
         self.undo.push(UndoEntry::TransactionDeleted { restored });
