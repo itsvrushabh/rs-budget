@@ -55,7 +55,7 @@ pub async fn sync_handler(
 
             let is_enc_int = if env.is_encrypted { 1 } else { 0 };
 
-            conn.execute(
+            let inserted_rows = conn.execute(
                 r#"
                 INSERT OR IGNORE INTO messages (file_id, group_id, timestamp, is_encrypted, content)
                 VALUES (?1, ?2, ?3, ?4, ?5)
@@ -63,8 +63,10 @@ pub async fn sync_handler(
                 params![file_id, group_id, env.timestamp, is_enc_int, env.content,],
             )?;
 
-            if let Ok(ts) = Timestamp::from_str(&env.timestamp) {
-                server_trie.insert(&ts);
+            if inserted_rows > 0 {
+                if let Ok(ts) = Timestamp::from_str(&env.timestamp) {
+                    server_trie.insert(&ts);
+                }
             }
         }
 

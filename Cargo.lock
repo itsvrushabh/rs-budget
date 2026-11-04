@@ -86,6 +86,7 @@ name = "actual-server"
 version = "0.1.0"
 dependencies = [
  "actual-crypto",
+ "actual-storage",
  "actual-sync",
  "axum",
  "chrono",
