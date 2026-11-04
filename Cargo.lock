@@ -7,10 +7,14 @@ name = "actual-api"
 version = "0.1.0"
 dependencies = [
  "actual-core",
+ "actual-crypto",
+ "actual-import",
  "actual-storage",
  "actual-sync",
  "chrono",
  "rusqlite",
+ "serde_json",
+ "tempfile",
  "thiserror",
  "uuid",
 ]
