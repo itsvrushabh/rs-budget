@@ -9,6 +9,7 @@ members = [
     "crates/actual-server",
     "crates/actual-cli",
     "crates/actual-tui",
+    "crates/actual-gui",
 ]
 resolver = "2"
 
