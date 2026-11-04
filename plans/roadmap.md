@@ -58,9 +58,9 @@ Track each checklist item in issues or pull requests as work begins. Update this
   - [x] Browse accounts and transactions with interactive search and filter capabilities.
   - [x] Modal-driven transaction creation and budget allocation editing.
   - [x] Keyboard navigation (`h`/`j`/`k`/`l`, `Tab`, `e`, `a`, `/`, `?`, `q`), color-coded badges, and help modal.
-- [ ] Implement automated bank synchronization integration in `actual-import` ([#38](https://github.com/itsvrushabh/rs-budget/issues/38))
-  - [ ] Build adapters for SimpleFIN and GoCardless (Nordigen Open Banking) APIs.
-  - [ ] Securely store bank credentials and support incremental delta synchronization.
+- [x] Implement automated bank synchronization integration in `actual-import` ([#38](https://github.com/itsvrushabh/rs-budget/issues/38)) — merged PR #48
+  - [x] Build adapters for SimpleFIN and GoCardless (Nordigen Open Banking) APIs.
+  - [x] Securely store bank credentials with AES-256-GCM encryption and support incremental delta synchronization with deduplication.
 
 ## Phase 4 — Sync engine & 100% Rust self-hosted server
 
