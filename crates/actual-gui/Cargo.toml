@@ -1,0 +1,42 @@
+[package]
+name = "actual-gui"
+description = "Cross-platform graphical user interface components, editable financial table, and UI framework evaluation for rs-budget"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+actual-core = { path = "../actual-core", version = "0.1.0" }
+actual-sync = { path = "../actual-sync", version = "0.1.0" }
+actual-crypto = { path = "../actual-crypto", version = "0.1.0" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+unicode-segmentation = "1.10"
+unicode-width = "0.1"
+uuid = { version = "1.6", features = ["v4"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+actual-api = { path = "../actual-api", version = "0.1.0" }
+actual-storage = { path = "../actual-storage", version = "0.1.0" }
+rusqlite = { version = "0.31", features = ["bundled"] }
+clap = { version = "4.4", features = ["derive", "env"] }
+tokio = { version = "1.0", features = ["rt-multi-thread", "sync", "time"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+uuid = { version = "1.6", features = ["v4", "js"] }
+
+[[bin]]
+name = "actual-desktop"
+path = "src/bin/actual_desktop.rs"
+
+[[bin]]
+name = "actual-web"
+path = "src/bin/actual_web.rs"
+
+[dev-dependencies]
+tempfile = "3.27.0"
