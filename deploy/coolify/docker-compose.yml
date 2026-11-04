@@ -1,0 +1,28 @@
+# Coolify 1-Click Deployment Compose File for rs-budget
+version: "3.8"
+
+services:
+  actual-server:
+    image: ghcr.io/itsvrushabh/rs-budget-server:latest
+    container_name: actual-server
+    restart: unless-stopped
+    ports:
+      - "5006:5006"
+    environment:
+      - PORT=5006
+      - HOST=0.0.0.0
+      - ACTUAL_DATA_DIR=/data
+      - ACTUAL_WEB_DIR=/app/web
+      - ACTUAL_SERVER_PASSWORD=${SERVICE_PASSWORD_ACTUAL:-}
+    volumes:
+      - actual-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5006/account/needs-bootstrap || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  actual-data:
+    name: actual-budget-data

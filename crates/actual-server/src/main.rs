@@ -1,6 +1,6 @@
 //! `actual-server` binary entrypoint.
 
-use actual_server::{create_app, ServerState};
+use actual_server::{create_app_with_options, ServerState};
 use clap::Parser;
 use std::net::SocketAddr;
 use std::path::PathBuf;
@@ -29,6 +29,10 @@ struct Args {
     /// Server master password (optional, can also be bootstrapped via web UI)
     #[arg(long, env = "ACTUAL_SERVER_PASSWORD")]
     server_password: Option<String>,
+
+    /// Optional directory to serve web client static assets from (enables unified single-port web + server)
+    #[arg(long, env = "ACTUAL_WEB_DIR")]
+    web_dir: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -45,11 +49,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::info!(
         data_dir = %args.data_dir.display(),
+        web_dir = ?args.web_dir,
         "Initializing actual-server storage..."
     );
 
     let state = ServerState::new(&args.data_dir, args.server_password)?;
-    let app = create_app(state);
+    let app = create_app_with_options(state, args.web_dir);
 
     let addr: SocketAddr = format!("{}:{}", args.host, args.port).parse()?;
     tracing::info!("Listening on http://{}", addr);

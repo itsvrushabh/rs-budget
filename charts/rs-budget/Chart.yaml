@@ -1,0 +1,18 @@
+apiVersion: v2
+name: rs-budget
+description: A production-ready Helm chart for Actual Budget (100% Rust Sync Server & Web UI)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - finance
+  - budget
+  - envelope-budgeting
+  - rust
+  - actual-budget
+home: https://github.com/itsvrushabh/rs-budget
+sources:
+  - https://github.com/itsvrushabh/rs-budget
+maintainers:
+  - name: itsvrushabh
+    url: https://github.com/itsvrushabh

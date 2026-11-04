@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Actual-Budget-Rust</Name>
+  <Repository>ghcr.io/itsvrushabh/rs-budget-server:latest</Repository>
+  <Registry>https://github.com/itsvrushabh/rs-budget/pkgs/container/rs-budget-server</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/itsvrushabh/rs-budget/issues</Support>
+  <Project>https://github.com/itsvrushabh/rs-budget</Project>
+  <Overview>rs-budget is a local-first, 100% Rust rewrite of Actual Budget. It maintains full envelope budgeting, native SQLite storage, AES-256-GCM encryption, CRDT sync, and a built-in web interface.</Overview>
+  <Category>Finance: Productivity: Tools:</Category>
+  <WebUI>http://[IP]:[PORT:5006]/</WebUI>
+  <TemplateURL/>
+  <Icon>https://raw.githubusercontent.com/itsvrushabh/rs-budget/main/assets/icon.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Description>100% Rust rewrite of Actual Budget with native SQLite storage and encrypted CRDT sync.</Description>
+  <Networking>
+    <Mode>bridge</Mode>
+    <Publish>
+      <Port>
+        <HostPort>5006</HostPort>
+        <ContainerPort>5006</ContainerPort>
+        <Protocol>tcp</Protocol>
+      </Port>
+    </Publish>
+  </Networking>
+  <Data>
+    <Volume>
+      <HostDir>/mnt/user/appdata/actual-budget</HostDir>
+      <ContainerDir>/data</ContainerDir>
+      <Mode>rw</Mode>
+    </Volume>
+  </Data>
+  <Environment>
+    <Variable>
+      <Value>5006</Value>
+      <Name>PORT</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value>0.0.0.0</Value>
+      <Name>HOST</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value>/data</Value>
+      <Name>ACTUAL_DATA_DIR</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value>/app/web</Value>
+      <Name>ACTUAL_WEB_DIR</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value/>
+      <Name>ACTUAL_SERVER_PASSWORD</Name>
+      <Mode/>
+    </Variable>
+  </Environment>
+  <Labels/>
+  <Config Name="Web UI Port" Target="5006" Default="5006" Mode="tcp" Description="Port for Actual Budget Web and Sync API" Type="Port" Display="always" Required="true" Mask="false">5006</Config>
+  <Config Name="Data Path" Target="/data" Default="/mnt/user/appdata/actual-budget" Mode="rw" Description="Persistent directory for budget files and database" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/actual-budget</Config>
+  <Config Name="Server Password" Target="ACTUAL_SERVER_PASSWORD" Default="" Mode="" Description="Optional pre-configured master password (leave empty to bootstrap via UI)" Type="Variable" Display="always" Required="false" Mask="true"/>
+</Container>
