@@ -64,9 +64,9 @@ Track each checklist item in issues or pull requests as work begins. Update this
 
 ## Phase 4 — Sync engine & 100% Rust self-hosted server
 
-- [ ] Implement complete client CRDT sync logic in `actual-sync` ([#17](https://github.com/itsvrushabh/rs-budget/issues/17))
-  - [ ] Message log management, Merkle tree range diffing, and conflict resolution.
-  - [ ] Offline queueing, exponential backoff, and network reconnect logic.
+- [x] Implement complete client CRDT sync logic in `actual-sync` ([#17](https://github.com/itsvrushabh/rs-budget/issues/17)) — merged PR #51
+  - [x] Message log management (`messages_crdt`), Merkle tree range diffing (`diff_merkle`), and Last-Write-Wins (LWW) conflict resolution.
+  - [x] Offline queueing, exponential backoff, and network reconnect logic.
 - [ ] Implement full budget file encryption packaging, backup archives, and key rotation ([#39](https://github.com/itsvrushabh/rs-budget/issues/39))
   - [ ] Encrypt raw SQLite budget files into `.actual` transportable archives using AES-256-GCM.
   - [ ] Support re-encrypting budget databases and CRDT logs under an updated user passphrase.
