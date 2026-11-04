@@ -73,8 +73,8 @@ Track each checklist item in issues or pull requests as work begins. Update this
 - [x] Build 100% Rust self-hosted sync server with Axum in `actual-server` ([#18](https://github.com/itsvrushabh/rs-budget/issues/18)) — merged PR #53
   - [x] User authentication, encryption key exchange, budget metadata, and sync endpoints (`/sync/sync`).
   - [x] Multi-architecture Docker container images (`linux/amd64`, `linux/arm64`).
-- [ ] Cross-client sync interoperability tests with official Actual clients and server ([#19](https://github.com/itsvrushabh/rs-budget/issues/19))
-  - [ ] End-to-end multi-device sync, conflict scenarios, and offline reconnects.
+- [x] Cross-client sync interoperability tests with official Actual clients and server ([#19](https://github.com/itsvrushabh/rs-budget/issues/19)) — merged PR #54
+  - [x] End-to-end multi-device sync, conflict scenarios, and offline reconnects.
 
 ## Phase 5 — 100% Rust native graphical clients
 
