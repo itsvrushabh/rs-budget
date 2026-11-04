@@ -40,9 +40,9 @@ Track each checklist item in issues or pull requests as work begins. Update this
   - [ ] Assert identical balances, envelope numbers, and reports.
 - [x] Expose query, mutation, and undo behavior behind typed APIs in `actual-api` ([#13](https://github.com/itsvrushabh/rs-budget/issues/13)) — merged PR #41
   - [x] Implement command/mutation interfaces and undo/redo state restoration.
-- [ ] Implement financial reporting, net worth, and cash flow analytics engine in `actual-core` ([#37](https://github.com/itsvrushabh/rs-budget/issues/37))
-  - [ ] Calculate net worth progression (assets vs liabilities) over configurable timeframes.
-  - [ ] Generate monthly cash flow summaries, spending breakdowns by category group, and custom filtered analytics.
+- [x] Implement financial reporting, net worth, and cash flow analytics engine in `actual-core` ([#37](https://github.com/itsvrushabh/rs-budget/issues/37)) — merged PR #42
+  - [x] Calculate net worth progression (assets vs liabilities) over configurable timeframes.
+  - [x] Generate monthly cash flow summaries, spending breakdowns by category group, and custom filtered analytics.
 
 ## Phase 3 — Prioritized CLI, TUI, and import workflows
 
