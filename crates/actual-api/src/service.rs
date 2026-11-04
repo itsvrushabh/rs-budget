@@ -826,6 +826,42 @@ impl BudgetService {
         &self.store
     }
 
+    // ── Reports & Analytics ───────────────────────────────────────────────────
+
+    /// Compute net worth progression across historical snapshots.
+    #[must_use]
+    pub fn net_worth_report(
+        &self,
+        account_types: &HashMap<String, actual_core::AccountType>,
+        filter: &actual_core::ReportFilter,
+    ) -> actual_core::NetWorthReport {
+        let txs: Vec<Transaction> = self.transactions.values().cloned().collect();
+        let accts: Vec<Account> = self.accounts.values().cloned().collect();
+        actual_core::NetWorthReport::compute(&txs, &accts, account_types, filter)
+    }
+
+    /// Compute cash flow report (income, expenses, net, savings rate).
+    #[must_use]
+    pub fn cash_flow_report(
+        &self,
+        filter: &actual_core::ReportFilter,
+    ) -> actual_core::CashFlowReport {
+        let txs: Vec<Transaction> = self.transactions.values().cloned().collect();
+        actual_core::CashFlowReport::compute(&txs, filter)
+    }
+
+    /// Compute spending breakdown by category and category group.
+    #[must_use]
+    pub fn spending_report(
+        &self,
+        filter: &actual_core::ReportFilter,
+    ) -> actual_core::SpendingReport {
+        let txs: Vec<Transaction> = self.transactions.values().cloned().collect();
+        let cats: Vec<Category> = self.categories.values().cloned().collect();
+        let groups: Vec<CategoryGroup> = self.category_groups.values().cloned().collect();
+        actual_core::SpendingReport::compute(&txs, &cats, &groups, filter)
+    }
+
     // ── Internal undo / redo application ──────────────────────────────────────
 
     fn apply_undo(&mut self, entry: UndoEntry) -> Result<UndoEntry, ApiError> {

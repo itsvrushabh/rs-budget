@@ -830,3 +830,80 @@ fn test_undo_carryover() {
     svc.undo().unwrap();
     assert!(!svc.budget().get_category_carryover("2024-06", "cat-1"));
 }
+
+// ─── Service Report Queries ───────────────────────────────────────────────────
+
+#[test]
+fn test_budget_service_reports() {
+    let mut svc = BudgetService::open_in_memory().unwrap();
+
+    svc.create_account(CreateAccount {
+        id: "acc-1".into(),
+        name: "Checking".into(),
+        offbudget: false,
+    })
+    .unwrap();
+
+    svc.create_category_group(CreateCategoryGroup {
+        id: "grp-1".into(),
+        name: "General".into(),
+        is_income: false,
+    })
+    .unwrap();
+
+    svc.create_category(CreateCategory {
+        id: "cat-1".into(),
+        name: "Groceries".into(),
+        group_id: "grp-1".into(),
+        is_income: false,
+    })
+    .unwrap();
+
+    // Income: $3000
+    svc.add_transaction(AddTransaction {
+        id: "tx-inc".into(),
+        account_id: "acc-1".into(),
+        date: NaiveDate::from_ymd_opt(2024, 7, 1).unwrap(),
+        amount: dollars(3000),
+        payee_id: None,
+        category_id: None,
+        notes: None,
+        cleared: true,
+    })
+    .unwrap();
+
+    // Expense: -$500 on Groceries
+    svc.add_transaction(AddTransaction {
+        id: "tx-exp".into(),
+        account_id: "acc-1".into(),
+        date: NaiveDate::from_ymd_opt(2024, 7, 10).unwrap(),
+        amount: dollars(-500),
+        payee_id: None,
+        category_id: Some("cat-1".into()),
+        notes: None,
+        cleared: true,
+    })
+    .unwrap();
+
+    let filter = actual_core::ReportFilter::new();
+
+    // Cash flow
+    let cf = svc.cash_flow_report(&filter);
+    assert_eq!(cf.total_income, dollars(3000));
+    assert_eq!(cf.total_expenses, dollars(500));
+    assert_eq!(cf.total_net, dollars(2500));
+
+    // Spending
+    let sp = svc.spending_report(&filter);
+    assert_eq!(sp.total_spending, dollars(500));
+    assert_eq!(sp.groups.len(), 1);
+    assert_eq!(sp.groups[0].group_id, "grp-1");
+    assert_eq!(sp.groups[0].amount, dollars(500));
+
+    // Net worth
+    let mut acct_types = std::collections::HashMap::new();
+    acct_types.insert("acc-1".into(), actual_core::AccountType::Asset);
+    let nw = svc.net_worth_report(&acct_types, &filter);
+    assert_eq!(nw.months.len(), 1);
+    assert_eq!(nw.months[0].net_worth, dollars(2500));
+}

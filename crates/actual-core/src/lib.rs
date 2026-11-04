@@ -8,6 +8,7 @@ pub mod cents;
 pub mod error;
 pub mod models;
 pub mod payee;
+pub mod reports;
 pub mod rules;
 pub mod schedules;
 pub mod spreadsheet;
@@ -20,6 +21,10 @@ pub use category::{Category, CategoryGroup};
 pub use cents::{Cents, MAX_SAFE_CENTS, MIN_SAFE_CENTS};
 pub use error::DomainError;
 pub use payee::Payee;
+pub use reports::{
+    AccountType, CashFlowReport, CategorySpending, GroupSpending, MonthlyCashFlow, MonthlyNetWorth,
+    NetWorthReport, ReportFilter, SpendingReport,
+};
 pub use rules::{
     Action, ActionField, ActionOp, ActionValue, Condition, ConditionField, ConditionOp,
     ConditionValue, ConditionsOp, Rule, RuleStage, RulesEngine, SplitAllocation,
