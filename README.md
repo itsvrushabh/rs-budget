@@ -6,6 +6,13 @@ A local-first, 100% Rust rewrite of [Actual Budget](https://github.com/actualbud
 
 `rs-budget` preserves Actual's local-first envelope budgeting workflows, native SQLite budget files, end-to-end encryption, and CRDT synchronization, rewritten entirely in Rust with high performance, safety, and a first-class terminal experience (CLI & TUI).
 
+## Documentation & Guides
+
+- [Upstream Parity Matrix](docs/parity-matrix.md) — 100% upstream feature parity breakdown across all 6 phases.
+- [Migration Guide](docs/migration-guide.md) — Instructions for migrating existing budgets and sync servers.
+- [Configuration Reference](docs/configuration.md) — Server environment variables, CLI commands, and TUI keybindings.
+- [Release Notes (v0.1.0-preview)](docs/release-notes-v0.1.0-preview.md) — Public preview release details.
+
 ## Planning & Architecture
 
 All architectural specifications, feature matrices, implementation roadmaps, and CI/release workflows are maintained on the dedicated [`planning`](https://github.com/itsvrushabh/rs-budget/tree/planning) branch:
