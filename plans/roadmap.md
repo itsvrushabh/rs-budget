@@ -49,9 +49,9 @@ Track each checklist item in issues or pull requests as work begins. Update this
 - [x] Implement financial format parsers in `actual-import` ([#14](https://github.com/itsvrushabh/rs-budget/issues/14)) — merged PR #45
   - [x] Port QIF, OFX, and CSV workflows verified against upstream format fixtures.
   - [x] Implement transaction deduplication and payee matching.
-- [ ] Build non-interactive CLI in `actual-cli` ([#15](https://github.com/itsvrushabh/rs-budget/issues/15))
-  - [ ] Scripting commands, batch imports, account inspection, and automated maintenance.
-  - [ ] Machine-readable JSON output mode (`--json`).
+- [x] Build non-interactive CLI in `actual-cli` ([#15](https://github.com/itsvrushabh/rs-budget/issues/15)) — merged PR #46
+  - [x] Scripting commands, batch imports, account inspection, and automated maintenance.
+  - [x] Machine-readable JSON output mode (`--json`).
 - [ ] Build interactive Ratatui-based terminal client in `actual-tui` ([#16](https://github.com/itsvrushabh/rs-budget/issues/16))
   - [ ] Connect to local SQLite budget files or remote servers.
   - [ ] Navigate months and view category group and envelope balances.
