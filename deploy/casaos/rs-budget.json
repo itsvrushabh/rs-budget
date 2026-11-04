@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "name": "Actual Budget (Rust)",
+  "tagline": "100% Rust local-first envelope budgeting & sync server",
+  "description": "Privacy-focused, local-first envelope budgeting application built in Rust with native SQLite, AES-256-GCM encryption, and CRDT synchronization.",
+  "developer": "itsvrushabh",
+  "author": "itsvrushabh",
+  "icon": "https://raw.githubusercontent.com/itsvrushabh/rs-budget/main/assets/icon.png",
+  "category": "Finance",
+  "port_map": "5006",
+  "scheme": "http",
+  "index": "/",
+  "compose": {
+    "version": "3.8",
+    "services": {
+      "actual-server": {
+        "image": "ghcr.io/itsvrushabh/rs-budget-server:latest",
+        "container_name": "actual-server",
+        "restart": "always",
+        "ports": [
+          "5006:5006"
+        ],
+        "environment": [
+          "PORT=5006",
+          "HOST=0.0.0.0",
+          "ACTUAL_DATA_DIR=/data",
+          "ACTUAL_WEB_DIR=/app/web"
+        ],
+        "volumes": [
+          {
+            "type": "bind",
+            "source": "/DATA/AppData/actual-budget",
+            "target": "/data"
+          }
+        ]
+      }
+    }
+  }
+}
