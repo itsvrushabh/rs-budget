@@ -46,6 +46,7 @@ pub enum SyncError {
     Json(#[from] serde_json::Error),
 
     /// SQLite database error.
+    #[cfg(not(target_arch = "wasm32"))]
     #[error("SQLite database error: {0}")]
     Database(#[from] rusqlite::Error),
 
