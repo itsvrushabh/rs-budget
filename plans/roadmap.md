@@ -80,8 +80,8 @@ Track each checklist item in issues or pull requests as work begins. Update this
 
 - [x] Prototype and evaluate pure Rust cross-platform GUI toolkit in `actual-gui` ([#20](https://github.com/itsvrushabh/rs-budget/issues/20)) — merged PR #57
   - [x] Evaluate Slint / Dioxus against table editing, keyboard navigation, and accessibility.
-- [ ] Build native Desktop client for Linux, macOS, and Windows ([#21](https://github.com/itsvrushabh/rs-budget/issues/21))
-  - [ ] Offline-first SQLite support and native OS packaging.
+- [x] Build native Desktop client for Linux, macOS, and Windows ([#21](https://github.com/itsvrushabh/rs-budget/issues/21)) — merged PR #58
+  - [x] Offline-first SQLite support and native OS packaging.
 - [ ] Build Web client compiled to WebAssembly (WASM with OPFS) ([#22](https://github.com/itsvrushabh/rs-budget/issues/22))
   - [ ] Browser SQLite persistence via Origin Private File System (OPFS).
 - [ ] Build Mobile client for Android and iOS ([#23](https://github.com/itsvrushabh/rs-budget/issues/23))
