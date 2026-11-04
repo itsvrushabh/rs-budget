@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?OFX OFXHEADER="200" VERSION="211" SECURITY="NONE" OLDFILESPEC="NONE" NEWFILESPEC="NONE"?>
+<OFX>
+  <BANKMSGSRSV1>
+    <STMTTRNRS>
+      <STMTRS>
+        <BANKTRANLIST>
+          <STMTTRN>
+            <TRNTYPE>DEBIT</TRNTYPE>
+            <DTPOSTED>2024-05-12</DTPOSTED>
+            <TRNAMT>-85.20</TRNAMT>
+            <FITID>XML-FITID-999</FITID>
+            <NAME>WHOLEFDS SOHO 10123</NAME>
+            <MEMO>Organic groceries</MEMO>
+          </STMTTRN>
+        </BANKTRANLIST>
+      </STMTRS>
+    </STMTTRNRS>
+  </BANKMSGSRSV1>
+</OFX>

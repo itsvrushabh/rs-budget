@@ -10,3 +10,8 @@ homepage.workspace = true
 [dependencies]
 actual-core = { path = "../actual-core", version = "0.1.0" }
 thiserror = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
+regex = "1.10"
+csv = "1.3"
+uuid = { version = "1.6", features = ["v4", "serde"] }
