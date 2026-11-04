@@ -5,6 +5,7 @@ pub mod archive;
 pub mod cipher;
 pub mod error;
 pub mod key;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod rotation;
 pub mod store;
 
@@ -15,5 +16,6 @@ pub use cipher::{
 };
 pub use error::CryptoError;
 pub use key::{Key, KeySerialized, KEY_LENGTH_BYTES, PBKDF2_ITERATIONS};
+#[cfg(not(target_arch = "wasm32"))]
 pub use rotation::KeyRotator;
 pub use store::KeyStore;

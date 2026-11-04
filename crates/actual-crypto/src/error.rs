@@ -41,6 +41,7 @@ pub enum CryptoError {
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 
+    #[cfg(not(target_arch = "wasm32"))]
     #[error("Database error: {0}")]
     Database(#[from] rusqlite::Error),
 }
