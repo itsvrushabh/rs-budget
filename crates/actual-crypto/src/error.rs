@@ -31,4 +31,16 @@ pub enum CryptoError {
 
     #[error("JSON serialization error: {0}")]
     Json(#[from] serde_json::Error),
+
+    #[error("Archive error: {0}")]
+    Archive(String),
+
+    #[error("Zip archive error: {0}")]
+    Zip(#[from] zip::result::ZipError),
+
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("Database error: {0}")]
+    Database(#[from] rusqlite::Error),
 }
