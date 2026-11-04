@@ -194,26 +194,28 @@ impl CrdtTracker {
                 None => true,
             };
 
-            if remote_wins {
-                // Apply update to underlying dataset table
-                Self::apply_field_to_table(conn, &msg.dataset, &msg.row, &msg.column, &msg.value)?;
+            // 2. Record in messages_crdt if not already recorded
+            let inserted_rows = conn.execute(
+                "INSERT OR IGNORE INTO messages_crdt (timestamp, dataset, row, column, value) VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![
+                    msg.timestamp.to_string(),
+                    msg.dataset,
+                    msg.row,
+                    msg.column,
+                    msg.value.as_bytes(),
+                ],
+            )?;
 
-                // Record in messages_crdt
-                conn.execute(
-                    "INSERT OR REPLACE INTO messages_crdt (timestamp, dataset, row, column, value) VALUES (?1, ?2, ?3, ?4, ?5)",
-                    params![
-                        msg.timestamp.to_string(),
-                        msg.dataset,
-                        msg.row,
-                        msg.column,
-                        msg.value.as_bytes(),
-                    ],
-                )?;
-
-                // Advance Merkle trie and HLC clock
+            // Advance Merkle trie and HLC clock if newly seen
+            if inserted_rows > 0 {
                 self.merkle.insert(&msg.timestamp);
                 let now = chrono::Utc::now().timestamp_millis().max(0) as u64;
                 let _ = self.clock.recv(&msg.timestamp, now);
+            }
+
+            if remote_wins {
+                // Apply update to underlying dataset table
+                Self::apply_field_to_table(conn, &msg.dataset, &msg.row, &msg.column, &msg.value)?;
 
                 // Update result stats
                 result.applied_count += 1;
@@ -230,8 +232,8 @@ impl CrdtTracker {
             }
         }
 
-        // Persist latest clock if any messages were applied
-        if result.applied_count > 0 {
+        // Persist latest clock if any messages were applied or received
+        if result.applied_count > 0 || result.ignored_count > 0 {
             let clock_ts = self.clock.timestamp();
             conn.execute(
                 "INSERT INTO messages_clock (id, clock) VALUES (1, ?1) ON CONFLICT(id) DO UPDATE SET clock = ?1",

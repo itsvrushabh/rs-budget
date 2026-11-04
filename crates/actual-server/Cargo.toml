@@ -26,5 +26,6 @@ prost = "0.13"
 thiserror = "1.0"
 
 [dev-dependencies]
+actual-storage = { path = "../actual-storage", version = "0.1.0" }
 tempfile = "3.27.0"
 ureq = { version = "2.10", features = ["json"] }
