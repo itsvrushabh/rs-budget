@@ -1,0 +1,62 @@
+name: Deploy Web Client to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'crates/actual-gui/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build WASM Web Client
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build actual-web asset generator
+        run: cargo build --release --bin actual-web
+
+      - name: Export web distribution bundle
+        run: |
+          ./target/release/actual-web export-dist --output web-dist
+          mkdir -p web-dist/icons
+          cp packaging/desktop/actual-budget.svg web-dist/icons/actual-budget.svg
+          cp packaging/desktop/actual-budget.svg web-dist/favicon.svg
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web-dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
