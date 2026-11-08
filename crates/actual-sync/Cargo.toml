@@ -28,3 +28,10 @@ uuid = { version = "1.6", features = ["v4", "js"] }
 
 [build-dependencies]
 prost-build = "0.13"
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "sync_benchmarks"
+harness = false
