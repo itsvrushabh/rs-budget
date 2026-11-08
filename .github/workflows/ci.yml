@@ -3,8 +3,18 @@ name: Continuous Integration
 on:
   push:
     branches: [dev, main, release]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
   pull_request:
     branches: [dev, main]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
@@ -18,7 +28,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Protoc
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
