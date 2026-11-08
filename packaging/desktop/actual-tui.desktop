@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Actual Budget (TUI)
+GenericName=Personal Finance Terminal UI
+Comment=Interactive terminal envelope budgeting application built in 100% Rust
+Exec=actual-tui
+Icon=actual-budget
+Terminal=true
+Type=Application
+Categories=Office;Finance;ConsoleOnly;
+Keywords=finance;budget;envelope;money;tui;terminal;

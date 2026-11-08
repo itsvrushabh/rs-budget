@@ -1,0 +1,29 @@
+# Maintainer: Vrushabh <https://github.com/itsvrushabh>
+pkgname=rs-budget-bin
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Privacy-first, local-first envelope budgeting suite in 100% Rust (precompiled binary)"
+arch=('x86_64' 'aarch64')
+url="https://github.com/itsvrushabh/rs-budget"
+license=('MIT')
+depends=('gcc-libs' 'glibc' 'openssl' 'sqlite')
+provides=('rs-budget' 'actual' 'actual-tui' 'actual-desktop' 'actual-server')
+conflicts=('rs-budget' 'actual' 'actual-tui' 'actual-desktop' 'actual-server')
+source_x86_64=("https://github.com/itsvrushabh/rs-budget/releases/download/v${pkgver}/rs-budget-v${pkgver}-x86_64-unknown-linux-gnu.tar.gz")
+source_aarch64=("https://github.com/itsvrushabh/rs-budget/releases/download/v${pkgver}/rs-budget-v${pkgver}-aarch64-unknown-linux-gnu.tar.gz")
+sha256sums_x86_64=('SKIP')
+sha256sums_aarch64=('SKIP')
+
+package() {
+    cd "${srcdir}"
+
+    install -Dm755 "actual" "${pkgdir}/usr/bin/actual"
+    install -Dm755 "actual-tui" "${pkgdir}/usr/bin/actual-tui"
+    install -Dm755 "actual-desktop" "${pkgdir}/usr/bin/actual-desktop"
+    install -Dm755 "actual-server" "${pkgdir}/usr/bin/actual-server"
+
+    install -Dm644 "packaging/desktop/actual.desktop" "${pkgdir}/usr/share/applications/actual.desktop"
+    install -Dm644 "packaging/desktop/actual-tui.desktop" "${pkgdir}/usr/share/applications/actual-tui.desktop"
+    install -Dm644 "packaging/desktop/com.actualbudget.actual.metainfo.xml" "${pkgdir}/usr/share/metainfo/com.actualbudget.actual.metainfo.xml"
+    install -Dm644 "packaging/desktop/actual-budget.svg" "${pkgdir}/usr/share/icons/hicolor/scalable/apps/actual-budget.svg"
+}

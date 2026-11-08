@@ -1,6 +1,7 @@
 # rs-budget
 
 [![Continuous Integration](https://github.com/itsvrushabh/rs-budget/actions/workflows/ci.yml/badge.svg)](https://github.com/itsvrushabh/rs-budget/actions/workflows/ci.yml)
+[![Live Demo](https://img.shields.io/badge/Demo-WebAssembly%20(OPFS)-blue?logo=webassembly)](https://itsvrushabh.github.io/rs-budget/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust: 2021](https://img.shields.io/badge/Rust-2021_Edition-orange.svg)](https://www.rust-lang.org/)
 [![Upstream Parity](https://img.shields.io/badge/Upstream_Parity-100%25-brightgreen.svg)](docs/parity-matrix.md)
