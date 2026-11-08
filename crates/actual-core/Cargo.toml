@@ -15,3 +15,10 @@ chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.6", features = ["v4", "serde", "js"] }
 slotmap = { version = "1.0", features = ["serde"] }
 regex = "1.10"
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "core_benchmarks"
+harness = false
