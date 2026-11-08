@@ -1,0 +1,15 @@
+Source: rs-budget
+Section: utils
+Priority: optional
+Maintainer: Vrushabh <https://github.com/itsvrushabh>
+Build-Depends: debhelper-compat (= 13), cargo, rustc, libssl-dev, libsqlite3-dev
+Standards-Version: 4.6.2
+Homepage: https://github.com/itsvrushabh/rs-budget
+
+Package: rs-budget
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libssl3, libsqlite3-0
+Description: Privacy-first, local-first envelope budgeting suite in 100% Rust
+ Actual Budget is a 100% pure Rust rewrite of the popular personal finance system,
+ delivering local-first SQLite persistence, end-to-end AES-256-GCM encryption,
+ and conflict-free CRDT synchronization with self-hosted Axum servers.
