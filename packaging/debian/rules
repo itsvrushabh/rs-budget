@@ -1,0 +1,19 @@
+#!/usr/bin/make -f
+%:
+	dh $@
+
+override_dh_auto_build:
+	cargo build --release --locked --bins
+
+override_dh_auto_test:
+	cargo test --release --locked --bins
+
+override_dh_auto_install:
+	install -Dm755 target/release/actual debian/rs-budget/usr/bin/actual
+	install -Dm755 target/release/actual-tui debian/rs-budget/usr/bin/actual-tui
+	install -Dm755 target/release/actual-desktop debian/rs-budget/usr/bin/actual-desktop
+	install -Dm755 target/release/actual-server debian/rs-budget/usr/bin/actual-server
+	install -Dm644 packaging/desktop/actual.desktop debian/rs-budget/usr/share/applications/actual.desktop
+	install -Dm644 packaging/desktop/actual-tui.desktop debian/rs-budget/usr/share/applications/actual-tui.desktop
+	install -Dm644 packaging/desktop/com.actualbudget.actual.metainfo.xml debian/rs-budget/usr/share/metainfo/com.actualbudget.actual.metainfo.xml
+	install -Dm644 packaging/desktop/actual-budget.svg debian/rs-budget/usr/share/icons/hicolor/scalable/apps/actual-budget.svg
