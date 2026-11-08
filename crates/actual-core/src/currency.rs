@@ -208,11 +208,15 @@ mod tests {
         converter.set_rate(rate);
 
         // Convert $100.00 USD -> EUR
-        let eur = converter.convert(Cents::from_cents(10000), "USD", "EUR").unwrap();
+        let eur = converter
+            .convert(Cents::from_cents(10000), "USD", "EUR")
+            .unwrap();
         assert_eq!(eur.as_cents(), 9200); // 92.00 EUR
 
         // Inverted conversion EUR -> USD
-        let usd = converter.convert(Cents::from_cents(9200), "EUR", "USD").unwrap();
+        let usd = converter
+            .convert(Cents::from_cents(9200), "EUR", "USD")
+            .unwrap();
         assert_eq!(usd.as_cents(), 10000); // 100.00 USD
     }
 }

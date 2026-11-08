@@ -1,8 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
+use actual_sync::proto::Message;
 use actual_sync::timestamp::{HlcClock, Timestamp, DEFAULT_MAX_DRIFT};
 use actual_sync::{diff_merkle, TrieNode};
-use actual_sync::proto::Message;
 
 fn bench_hlc_monotonic_clock(c: &mut Criterion) {
     let mut clock = HlcClock::new(Timestamp::new(0, 0, "1"), DEFAULT_MAX_DRIFT);
@@ -37,7 +37,10 @@ fn bench_merkle_trie_diff(c: &mut Criterion) {
     let mut trie2 = TrieNode::empty();
 
     for minute in 0..100 {
-        let ts_str = format!("2026-11-08T12:{:02}:00.000Z-0000-0123456789ABCDEF", minute % 60);
+        let ts_str = format!(
+            "2026-11-08T12:{:02}:00.000Z-0000-0123456789ABCDEF",
+            minute % 60
+        );
         if let Ok(ts) = Timestamp::parse(&ts_str) {
             trie1.insert(&ts);
             if minute < 90 {

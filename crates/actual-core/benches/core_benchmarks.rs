@@ -1,6 +1,6 @@
-use std::slice::from_ref;
 use chrono::NaiveDate;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use std::slice::from_ref;
 
 use actual_core::budget::EnvelopeBudget;
 use actual_core::category::{Category, CategoryGroup};
