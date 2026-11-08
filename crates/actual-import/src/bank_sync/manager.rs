@@ -267,7 +267,9 @@ impl BankSyncManager {
             BankProviderType::Plaid => {
                 return Err(ImportError::BankSync {
                     provider: "plaid".into(),
-                    message: "Plaid connector requires configuring plaid_client_id and plaid_secret".into(),
+                    message:
+                        "Plaid connector requires configuring plaid_client_id and plaid_secret"
+                            .into(),
                 });
             }
             BankProviderType::Teller => {
