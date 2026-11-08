@@ -264,6 +264,18 @@ impl BankSyncManager {
 
                 txs
             }
+            BankProviderType::Plaid => {
+                return Err(ImportError::BankSync {
+                    provider: "plaid".into(),
+                    message: "Plaid connector requires configuring plaid_client_id and plaid_secret".into(),
+                });
+            }
+            BankProviderType::Teller => {
+                return Err(ImportError::BankSync {
+                    provider: "teller".into(),
+                    message: "Teller connector requires configuring teller_application_id and certificate".into(),
+                });
+            }
         };
 
         // Process raw transactions: clean payees and deduplicate

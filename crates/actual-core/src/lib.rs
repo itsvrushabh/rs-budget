@@ -5,6 +5,7 @@ pub mod account;
 pub mod budget;
 pub mod category;
 pub mod cents;
+pub mod currency;
 pub mod error;
 pub mod models;
 pub mod payee;
@@ -19,6 +20,7 @@ pub use account::{Account, AccountGroup};
 pub use budget::EnvelopeBudget;
 pub use category::{Category, CategoryGroup};
 pub use cents::{Cents, MAX_SAFE_CENTS, MIN_SAFE_CENTS};
+pub use currency::{Currency, CurrencyConverter, ExchangeRate};
 pub use error::DomainError;
 pub use payee::Payee;
 pub use reports::{

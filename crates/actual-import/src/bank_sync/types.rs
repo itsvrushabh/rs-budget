@@ -13,6 +13,10 @@ pub enum BankProviderType {
     SimpleFin,
     /// GoCardless / Nordigen Open Banking API (Europe & UK).
     GoCardless,
+    /// Plaid API integration (US, Canada, UK, Europe).
+    Plaid,
+    /// Teller API integration (US Real-Time Banking).
+    Teller,
 }
 
 impl std::fmt::Display for BankProviderType {
@@ -20,6 +24,8 @@ impl std::fmt::Display for BankProviderType {
         match self {
             Self::SimpleFin => write!(f, "SimpleFIN"),
             Self::GoCardless => write!(f, "GoCardless"),
+            Self::Plaid => write!(f, "Plaid"),
+            Self::Teller => write!(f, "Teller"),
         }
     }
 }
