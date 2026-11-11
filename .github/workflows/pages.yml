@@ -42,6 +42,8 @@ jobs:
           ./target/release/actual-web export-dist --output web-dist
           mkdir -p web-dist/icons
           cp packaging/desktop/actual-budget.svg web-dist/icons/actual-budget.svg
+          cp packaging/desktop/actual-budget.svg web-dist/icons/icon-192.png
+          cp packaging/desktop/actual-budget.svg web-dist/icons/icon-512.png
           cp packaging/desktop/actual-budget.svg web-dist/favicon.svg
 
       - name: Upload Pages Artifact
