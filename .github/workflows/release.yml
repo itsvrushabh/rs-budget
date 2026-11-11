@@ -20,7 +20,6 @@ concurrency:
 
 permissions:
   contents: write
-  packages: write
 
 jobs:
   test-before-release:
@@ -45,7 +44,7 @@ jobs:
     name: Publish Crates to Crates.io
     needs: test-before-release
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' || !inputs.dry_run }}
+    if: startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || !inputs.dry_run)
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -77,6 +76,7 @@ jobs:
             "actual-server"
             "actual-cli"
             "actual-tui"
+            "actual-gui"
           )
 
           for crate in "${CRATES[@]}"; do
@@ -102,7 +102,7 @@ jobs:
             target: x86_64-apple-darwin
             asset_name: rs-budget-macos-x86_64
             archive: tar.gz
-          - os: macos-13
+          - os: macos-14
             target: aarch64-apple-darwin
             asset_name: rs-budget-macos-aarch64
             archive: tar.gz
@@ -203,31 +203,3 @@ jobs:
             gh release create "${{ github.ref_name }}" release-assets/* \
               --title "Release ${{ github.ref_name }}" \
               --generate-notes
-
-  build-container:
-    name: Build & Push Web Server Container
-    needs: test-before-release
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || !inputs.dry_run
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build Web Server Image
-        run: |
-          if [ -f Dockerfile ]; then
-            echo "Building Docker container for actual-server..."
-            docker build -t ghcr.io/${{ github.repository }}/actual-server:${{ github.ref_name }} .
-          else
-            echo "Dockerfile not yet created. Skipping container build step."
-          fi

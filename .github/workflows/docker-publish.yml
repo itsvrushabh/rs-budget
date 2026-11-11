@@ -13,6 +13,10 @@ env:
   IMAGE_NAME_SERVER: ${{ github.repository }}-server
   IMAGE_NAME_WEB: ${{ github.repository }}-web
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
