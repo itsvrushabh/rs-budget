@@ -52,6 +52,22 @@ pub struct MobileViewport {
 }
 
 impl MobileViewport {
+    /// Compact iPhone / Android (375 x 667 logical pt, 2x scale, e.g. iPhone SE).
+    pub fn compact_phone() -> Self {
+        Self {
+            width: 375,
+            height: 667,
+            scale_factor: 2,
+            orientation: ScreenOrientation::Portrait,
+            safe_area: SafeAreaInsets {
+                top: 20,
+                bottom: 0,
+                left: 0,
+                right: 0,
+            },
+        }
+    }
+
     /// Standard iPhone (393 x 852 logical pt, 3x scale).
     pub fn standard_phone() -> Self {
         Self {
@@ -60,6 +76,22 @@ impl MobileViewport {
             scale_factor: 3,
             orientation: ScreenOrientation::Portrait,
             safe_area: SafeAreaInsets::default(),
+        }
+    }
+
+    /// Large Phone (430 x 932 logical pt, 3x scale, e.g. iPhone Pro Max, Galaxy Ultra).
+    pub fn large_phone() -> Self {
+        Self {
+            width: 430,
+            height: 932,
+            scale_factor: 3,
+            orientation: ScreenOrientation::Portrait,
+            safe_area: SafeAreaInsets {
+                top: 59,
+                bottom: 34,
+                left: 0,
+                right: 0,
+            },
         }
     }
 
@@ -83,7 +115,7 @@ impl MobileViewport {
     pub fn form_factor(&self) -> DeviceFormFactor {
         if self.width >= 600 {
             DeviceFormFactor::Tablet
-        } else if self.width > 430 {
+        } else if self.width >= 430 {
             DeviceFormFactor::LargePhone
         } else if self.width >= 390 {
             DeviceFormFactor::StandardPhone

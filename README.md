@@ -247,6 +247,7 @@ actual --db budget.sqlite sync --server http://localhost:5006 --token "secret"
 ## 📚 Documentation & Guides
 
 - [Upstream Parity Matrix](docs/parity-matrix.md) — 100% upstream feature parity breakdown across all 6 phases.
+- [Mobile Installation Guide](docs/mobile-installation.md) — Direct Android APK download and iOS IPA sideloading without an Apple Developer account.
 - [Self-Hosting Guide](docs/self-hosting.md) — Complete guide for Docker Compose, Podman, Kubernetes Helm, Umbrel, CasaOS, and reverse proxies.
 - [Migration Guide](docs/migration-guide.md) — Instructions for migrating existing budgets and sync servers.
 - [Configuration Reference](docs/configuration.md) — Server environment variables, CLI commands, and TUI keybindings.
