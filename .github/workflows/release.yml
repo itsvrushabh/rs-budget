@@ -150,9 +150,35 @@ jobs:
           name: ${{ matrix.asset_name }}
           path: dist/*
 
+  build-mobile-packages:
+    name: Build Mobile Packages (Android APK & iOS IPA)
+    needs: test-before-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Package Mobile Artifacts
+        run: |
+          ./scripts/package-mobile.sh all
+
+      - name: Upload Mobile Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rs-budget-mobile
+          path: dist/mobile/*
+
   create-github-release:
     name: Create GitHub Release & Upload Assets
-    needs: build-binaries
+    needs: [build-binaries, build-mobile-packages]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v') && (github.event_name == 'push' || !inputs.dry_run)
     steps:

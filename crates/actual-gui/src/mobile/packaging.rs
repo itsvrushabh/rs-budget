@@ -107,6 +107,31 @@ android {{
             version_name = self.version_name,
         )
     }
+
+    /// Generates Android ProGuard/R8 obfuscation and keep rules.
+    pub fn generate_proguard_rules(&self) -> String {
+        r#"# Proguard rules for Actual Budget Mobile (NativeActivity)
+-keep class android.app.NativeActivity { *; }
+-keepclassmembers class * extends android.app.NativeActivity {
+    *;
+}
+-dontwarn android.app.NativeActivity
+"#
+        .to_string()
+    }
+
+    /// Returns direct sideloading instructions for Android APK installation.
+    pub fn generate_sideload_guide(&self) -> String {
+        format!(
+            "# Android APK Direct Installation Guide\n\n\
+            1. Download `{package_name}.apk` directly from the GitHub Releases page.\n\
+            2. On your Android device, go to **Settings > Security** (or Apps & Notifications) and enable **Install Unknown Apps** for your browser or file manager.\n\
+            3. Tap the downloaded `.apk` file and tap **Install**.\n\
+            4. Open **{app_name}** and start budgeting!\n",
+            package_name = self.package_name,
+            app_name = self.app_name,
+        )
+    }
 }
 
 /// iOS packaging metadata.
@@ -181,6 +206,60 @@ impl IosPackagingConfig {
             bundle_display_name = self.bundle_display_name,
             bundle_short_version = self.bundle_short_version,
             bundle_version = self.bundle_version,
+        )
+    }
+
+    /// Generates legacy macOS/iOS PkgInfo bundle marker.
+    pub fn generate_pkg_info(&self) -> String {
+        "APPL????".to_string()
+    }
+
+    /// Generates ExportOptions.plist for Xcode ad-hoc/development distribution.
+    pub fn generate_export_options_plist(&self) -> String {
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>development</string>
+    <key>compileBitcode</key>
+    <false/>
+    <key>signingStyle</key>
+    <string>automatic</string>
+    <key>stripSwiftSymbols</key>
+    <true/>
+</dict>
+</plist>
+"#
+        .to_string()
+    }
+
+    /// Returns direct sideloading instructions for iOS without Apple Developer Program membership.
+    pub fn generate_sideload_guide(&self) -> String {
+        format!(
+            "# iOS Direct Installation Guide (No Apple Developer Program Membership Required)\n\n\
+            You do NOT need a paid $99/year Apple Developer account to install `{app_name}` on your iPhone or iPad.\n\n\
+            ### Method 1: AltStore / SideStore (Recommended)\n\
+            1. Install [AltServer](https://altstore.io) on your Mac or Windows PC.\n\
+            2. Connect your iPhone/iPad via USB, install AltStore onto your device using your free personal Apple ID.\n\
+            3. Download `{bundle_name}-unsigned.ipa` from GitHub Releases onto your iPhone/iPad.\n\
+            4. In the AltStore app on your device, tap **+** (My Apps) and select the downloaded `.ipa`.\n\
+            5. AltStore will sign and install the app directly to your home screen.\n\n\
+            ### Method 2: Sideloadly (PC or Mac)\n\
+            1. Download [Sideloadly](https://sideloadly.io) on Windows or macOS.\n\
+            2. Connect your iPhone/iPad via USB.\n\
+            3. Drag and drop `{bundle_name}-unsigned.ipa` into Sideloadly.\n\
+            4. Enter your free Apple ID and click **Start**.\n\
+            5. On your iPhone, go to **Settings > General > VPN & Device Management** and tap **Trust [Your Apple ID]**.\n\n\
+            ### Method 3: TrollStore (iOS 14.0 - 16.6.1 / 17.0)\n\
+            1. If your device supports TrollStore, simply share `{bundle_name}-unsigned.ipa` to TrollStore.\n\
+            2. TrollStore signs the app permanently with no 7-day expiration.\n\n\
+            ### Method 4: Xcode Free Personal Team (Mac only)\n\
+            1. Open Xcode on macOS, log in with your free Apple ID under **Settings > Accounts**.\n\
+            2. Create or open the project, select your Personal Team under **Signing & Capabilities**.\n\
+            3. Connect your iPhone or iPad, select it as run destination, and click **Run** (Cmd+R).\n",
+            app_name = self.bundle_display_name,
+            bundle_name = self.bundle_name,
         )
     }
 }

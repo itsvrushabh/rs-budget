@@ -30,6 +30,9 @@ tokio = { version = "1.0", features = ["rt-multi-thread", "sync", "time"] }
 getrandom = { version = "0.2", features = ["js"] }
 uuid = { version = "1.6", features = ["v4", "js"] }
 
+[lib]
+crate-type = ["lib", "cdylib", "staticlib"]
+
 [[bin]]
 name = "actual-desktop"
 path = "src/bin/actual_desktop.rs"
@@ -37,6 +40,10 @@ path = "src/bin/actual_desktop.rs"
 [[bin]]
 name = "actual-web"
 path = "src/bin/actual_web.rs"
+
+[[bin]]
+name = "actual-mobile"
+path = "src/bin/actual_mobile.rs"
 
 [dev-dependencies]
 tempfile = "3.27.0"

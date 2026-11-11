@@ -172,4 +172,41 @@ fn test_mobile_packaging_manifests() {
     assert!(plist_xml.contains("<key>CFBundleIdentifier</key>"));
     assert!(plist_xml.contains("<string>org.actualbudget.mobile</string>"));
     assert!(plist_xml.contains("UIInterfaceOrientationPortrait"));
+
+    // Proguard rules & Sideload guides
+    let proguard = android.generate_proguard_rules();
+    assert!(proguard.contains("NativeActivity"));
+
+    let android_guide = android.generate_sideload_guide();
+    assert!(android_guide.contains("Install Unknown Apps"));
+
+    let pkg_info = ios.generate_pkg_info();
+    assert_eq!(pkg_info, "APPL????");
+
+    let export_plist = ios.generate_export_options_plist();
+    assert!(export_plist.contains("<key>method</key>"));
+    assert!(export_plist.contains("<string>development</string>"));
+
+    let ios_guide = ios.generate_sideload_guide();
+    assert!(ios_guide.contains("AltStore"));
+    assert!(ios_guide.contains("Sideloadly"));
+}
+
+#[test]
+fn test_mobile_all_form_factors() {
+    let compact = MobileViewport::compact_phone();
+    assert_eq!(compact.form_factor(), DeviceFormFactor::CompactPhone);
+    assert_eq!(compact.width, 375);
+    assert_eq!(compact.height, 667);
+
+    let standard = MobileViewport::standard_phone();
+    assert_eq!(standard.form_factor(), DeviceFormFactor::StandardPhone);
+
+    let large = MobileViewport::large_phone();
+    assert_eq!(large.form_factor(), DeviceFormFactor::LargePhone);
+    assert_eq!(large.width, 430);
+    assert_eq!(large.height, 932);
+
+    let tablet = MobileViewport::tablet();
+    assert_eq!(tablet.form_factor(), DeviceFormFactor::Tablet);
 }
