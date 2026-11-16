@@ -697,20 +697,22 @@ async fn test_upstream_sync_wire_format_compatibility() {
     req.encode(&mut body).unwrap();
 
     // Verify official HTTP headers expected by Node.js actual-server and web client
-    let resp_raw = ureq::post(&format!("{server_url}/sync/sync"))
-        .set("Content-Type", "application/actual-sync")
-        .set("X-Actual-Sync-Version", "1")
-        .send_bytes(&body)
+    let mut resp_raw = ureq::post(&format!("{server_url}/sync/sync"))
+        .header("Content-Type", "application/actual-sync")
+        .header("X-Actual-Sync-Version", "1")
+        .send(body.as_slice())
         .expect("send upstream sync request");
 
     assert_eq!(resp_raw.status(), 200);
     assert_eq!(
-        resp_raw.header("Content-Type"),
+        resp_raw
+            .headers()
+            .get("Content-Type")
+            .and_then(|v| v.to_str().ok()),
         Some("application/actual-sync")
     );
 
-    let mut resp_bytes = Vec::new();
-    resp_raw.into_reader().read_to_end(&mut resp_bytes).unwrap();
+    let resp_bytes = resp_raw.body_mut().read_to_vec().unwrap();
     let response =
         SyncResponse::decode(resp_bytes.as_slice()).expect("decode upstream protobuf response");
 

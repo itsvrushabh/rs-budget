@@ -9,8 +9,58 @@ use actual_sync::timestamp::Timestamp;
 use actual_sync::TrieNode;
 use prost::Message as ProstMessage;
 use serde_json::Value;
+use std::io::Read;
 use std::time::Duration;
 use tokio::net::TcpListener;
+
+trait RequestBuilderExt {
+    fn set(self, header: &str, val: &str) -> Self;
+    fn send_bytes(self, bytes: &[u8]) -> Result<ureq::http::Response<ureq::Body>, ureq::Error>;
+    fn call(self) -> Result<ureq::http::Response<ureq::Body>, ureq::Error>;
+}
+
+impl RequestBuilderExt for ureq::RequestBuilder<ureq::typestate::WithBody> {
+    fn set(self, header: &str, val: &str) -> Self {
+        self.header(header, val)
+    }
+    fn send_bytes(self, bytes: &[u8]) -> Result<ureq::http::Response<ureq::Body>, ureq::Error> {
+        self.send(bytes)
+    }
+    fn call(self) -> Result<ureq::http::Response<ureq::Body>, ureq::Error> {
+        self.send_empty()
+    }
+}
+
+impl RequestBuilderExt for ureq::RequestBuilder<ureq::typestate::WithoutBody> {
+    fn set(self, header: &str, val: &str) -> Self {
+        self.header(header, val)
+    }
+    fn send_bytes(self, _bytes: &[u8]) -> Result<ureq::http::Response<ureq::Body>, ureq::Error> {
+        unimplemented!()
+    }
+    fn call(self) -> Result<ureq::http::Response<ureq::Body>, ureq::Error> {
+        self.call()
+    }
+}
+
+trait ResponseCompatExt {
+    fn into_json<T: serde::de::DeserializeOwned>(self) -> Result<T, ureq::Error>;
+    fn into_string(self) -> Result<String, ureq::Error>;
+    fn into_reader(self) -> std::io::Cursor<Vec<u8>>;
+}
+
+impl ResponseCompatExt for ureq::http::Response<ureq::Body> {
+    fn into_json<T: serde::de::DeserializeOwned>(mut self) -> Result<T, ureq::Error> {
+        self.body_mut().read_json()
+    }
+    fn into_string(mut self) -> Result<String, ureq::Error> {
+        self.body_mut().read_to_string()
+    }
+    fn into_reader(mut self) -> std::io::Cursor<Vec<u8>> {
+        let bytes = self.body_mut().read_to_vec().expect("read bytes");
+        std::io::Cursor::new(bytes)
+    }
+}
 
 async fn spawn_test_server() -> (String, ServerState) {
     let state = ServerState::open_in_memory().expect("in-memory state");

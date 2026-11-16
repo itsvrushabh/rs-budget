@@ -2,7 +2,6 @@
 
 use crate::error::ServerError;
 use crate::state::ServerState;
-use axum::async_trait;
 use axum::extract::{FromRequestParts, State};
 use axum::http::request::Parts;
 use axum::http::HeaderMap;
@@ -25,7 +24,6 @@ pub struct AuthSession {
     pub token: String,
 }
 
-#[async_trait]
 impl FromRequestParts<ServerState> for AuthSession {
     type Rejection = ServerError;
 
