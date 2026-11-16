@@ -5,21 +5,36 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
     target-branch: "dev"
     open-pull-requests-limit: 10
     commit-message:
       prefix: "chore(deps)"
     groups:
-      rust-dependencies:
+      rust-minor-and-patch:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      rust-major:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
 
   # Check for GitHub Actions workflow action version updates
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
     target-branch: "dev"
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(ci)"
     groups:
@@ -32,6 +47,10 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
     target-branch: "dev"
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(docker)"
