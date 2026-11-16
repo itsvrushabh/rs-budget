@@ -564,12 +564,13 @@ impl EnvelopeBudget {
         Ok(())
     }
 
-    fn add_single_transaction(&mut self, month: &str, tx: &Transaction, is_income: bool) {
+    fn add_single_transaction(&mut self, month: &str, tx: &Transaction, _is_income: bool) {
         if let Some(cat_id) = &tx.category_id {
             let cell = cell_spent(month, cat_id);
             let current = self.spreadsheet.get_cents(&cell);
             self.spreadsheet.set_static(&cell, current + tx.amount);
-        } else if is_income || tx.amount.is_positive() {
+        } else {
+            // Uncategorized income or outflow: adjusts uncategorized pool affecting available funds
             let cell = cell_uncategorized_income(month);
             let current = self.spreadsheet.get_cents(&cell);
             self.spreadsheet.set_static(&cell, current + tx.amount);

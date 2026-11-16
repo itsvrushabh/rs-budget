@@ -239,6 +239,30 @@ impl App {
         self.active_modal = ActiveModal::None;
     }
 
+    /// Toggle carryover status for the currently selected category envelope.
+    pub fn toggle_selected_carryover(&mut self) {
+        let items = self.build_budget_items();
+        if let Some(BudgetItem::Category {
+            id,
+            name,
+            carryover,
+            ..
+        }) = items.get(self.budget_cursor)
+        {
+            let m = self.current_month_str();
+            let new_carry = !carryover;
+            let _ = self.svc.set_carryover(actual_api::commands::SetCarryover {
+                month: m,
+                category_id: id.clone(),
+                carry: new_carry,
+            });
+            self.status_message = Some(format!(
+                "Carryover for {name}: {}",
+                if new_carry { "enabled" } else { "disabled" }
+            ));
+        }
+    }
+
     /// Open modal to record a new transaction.
     pub fn open_add_transaction(&mut self) {
         self.add_tx_amount.clear();

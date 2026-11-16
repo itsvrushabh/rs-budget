@@ -1,5 +1,6 @@
 //! Synchronization endpoint processing protobuf CRDT messages and Merkle range diffs.
 
+use crate::auth::AuthSession;
 use crate::error::ServerError;
 use crate::state::ServerState;
 use actual_sync::proto::{MessageEnvelope, SyncRequest, SyncResponse};
@@ -18,6 +19,7 @@ use std::str::FromStr;
 /// Handler for `POST /sync/sync` and `POST /sync`.
 pub async fn sync_handler(
     State(state): State<ServerState>,
+    _session: AuthSession,
     _headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response, ServerError> {

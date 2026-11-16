@@ -1,5 +1,6 @@
 //! Encryption key metadata and registration endpoints.
 
+use crate::auth::AuthSession;
 use crate::error::ServerError;
 use crate::state::ServerState;
 use axum::extract::State;
@@ -41,6 +42,7 @@ pub struct KeyInfoData {
 /// Handler for `POST /user/get-key` (and `/user-get-key`).
 pub async fn get_key_handler(
     State(state): State<ServerState>,
+    _session: AuthSession,
     Json(payload): Json<GetKeyPayload>,
 ) -> Result<Response, ServerError> {
     let conn = state
@@ -75,6 +77,7 @@ pub async fn get_key_handler(
 /// Handler for `POST /user/create-key` (and `/user-create-key`).
 pub async fn create_key_handler(
     State(state): State<ServerState>,
+    _session: AuthSession,
     Json(payload): Json<CreateKeyPayload>,
 ) -> Result<Response, ServerError> {
     let conn = state
