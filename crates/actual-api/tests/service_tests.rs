@@ -907,3 +907,61 @@ fn test_budget_service_reports() {
     assert_eq!(nw.months.len(), 1);
     assert_eq!(nw.months[0].net_worth, dollars(2500));
 }
+
+#[test]
+fn test_budget_service_envelope_calculations() {
+    let mut svc = BudgetService::open_in_memory().unwrap();
+    let acc_id = svc
+        .create_account(CreateAccount {
+            id: "acc-checking".into(),
+            name: "Checking".into(),
+            offbudget: false,
+        })
+        .unwrap();
+
+    let grp_id = svc
+        .create_category_group(CreateCategoryGroup {
+            id: "grp-living".into(),
+            name: "Living Expenses".into(),
+            is_income: false,
+        })
+        .unwrap();
+
+    let cat_id = svc
+        .create_category(CreateCategory {
+            id: "cat-groceries".into(),
+            name: "Groceries".into(),
+            group_id: grp_id,
+            is_income: false,
+        })
+        .unwrap();
+
+    let month = "2026-11";
+    // Set budget $500.00
+    svc.set_budget(SetBudget {
+        month: month.into(),
+        category_id: cat_id.clone(),
+        amount: dollars(500),
+    })
+    .unwrap();
+
+    // Spend -$150.00
+    svc.add_transaction(AddTransaction {
+        id: "tx-groc-1".into(),
+        account_id: acc_id,
+        date: NaiveDate::from_ymd_opt(2026, 11, 10).unwrap(),
+        amount: dollars(-150),
+        payee_id: None,
+        category_id: Some(cat_id.clone()),
+        notes: Some("Supermarket".into()),
+        cleared: true,
+    })
+    .unwrap();
+
+    let budget = svc.budget();
+    assert_eq!(budget.get_category_budget(month, &cat_id), dollars(500));
+    assert_eq!(budget.get_category_spent(month, &cat_id), dollars(-150));
+    assert_eq!(budget.get_category_leftover(month, &cat_id), dollars(350));
+    assert_eq!(budget.get_total_budgeted(month), dollars(500));
+    assert_eq!(budget.get_total_spent(month), dollars(-150));
+}

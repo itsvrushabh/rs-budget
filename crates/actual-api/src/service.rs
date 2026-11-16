@@ -207,7 +207,16 @@ impl BudgetService {
             }
         }
 
-        // Load zero_budgets allocations
+        // Load zero_budgets allocations and initialize envelope reactive calculations
+        let mut months_set = std::collections::BTreeSet::new();
+        let now_month = chrono::Local::now().format("%Y-%m").to_string();
+        months_set.insert(now_month);
+
+        for tx in self.transactions.values() {
+            months_set.insert(tx.date.format("%Y-%m").to_string());
+        }
+
+        let mut loaded_budgets = Vec::new();
         {
             let mut stmt = self
                 .store
@@ -224,14 +233,45 @@ impl BudgetService {
                 Ok((month_str, cat_id, amount, carryover))
             })?;
             for r in rows {
-                let (month_str, cat_id, amount, carryover) = r?;
-                self.budget
-                    .set_budget(&month_str, &cat_id, actual_core::Cents::from_cents(amount));
-                self.budget.set_carryover(&month_str, &cat_id, carryover);
+                let item = r?;
+                months_set.insert(item.0.clone());
+                loaded_budgets.push(item);
+            }
+        }
+
+        let cats: Vec<Category> = self.categories.values().cloned().collect();
+        let grps: Vec<CategoryGroup> = self.category_groups.values().cloned().collect();
+
+        for month in &months_set {
+            let _ = self.budget.init_month(month, &cats, &grps);
+        }
+
+        for (month_str, cat_id, amount, carryover) in loaded_budgets {
+            self.budget
+                .set_budget(&month_str, &cat_id, actual_core::Cents::from_cents(amount));
+            self.budget.set_carryover(&month_str, &cat_id, carryover);
+        }
+
+        for tx in self.transactions.values() {
+            if !tx.tombstone {
+                let is_income = tx
+                    .category_id
+                    .as_ref()
+                    .and_then(|id| self.categories.get(id))
+                    .map(|c| c.is_income)
+                    .unwrap_or(false);
+                let _ = self.budget.add_transaction(tx, is_income);
             }
         }
 
         Ok(())
+    }
+
+    /// Ensures that the specified month has its reactive DAG nodes initialized.
+    pub fn ensure_month_initialized(&mut self, month: &str) {
+        let cats: Vec<Category> = self.categories.values().cloned().collect();
+        let grps: Vec<CategoryGroup> = self.category_groups.values().cloned().collect();
+        let _ = self.budget.init_month(month, &cats, &grps);
     }
 
     fn from_store(store: SqliteStore) -> Self {
@@ -472,7 +512,11 @@ impl BudgetService {
                 rusqlite::params![id, group.name, group.is_income as i32],
             )
             .map_err(actual_storage::StorageError::from)?;
-        self.category_groups.insert(id.clone(), group);
+        self.category_groups.insert(id.clone(), group.clone());
+        self.budget.register_groups(&[group]);
+        for m in self.budget.initialized_months().clone() {
+            self.ensure_month_initialized(&m);
+        }
         self.undo.push(UndoEntry::CategoryGroupCreated {
             group_id: id.clone(),
         });
@@ -492,7 +536,8 @@ impl BudgetService {
         } else {
             cmd.id.clone()
         };
-        let category = Category::new(&id, &cmd.name, &cmd.group_id);
+        let mut category = Category::new(&id, &cmd.name, &cmd.group_id);
+        category.is_income = cmd.is_income;
         self.store
             .conn()
             .execute(
@@ -501,7 +546,11 @@ impl BudgetService {
                 rusqlite::params![id, category.name, category.group_id, category.is_income as i32],
             )
             .map_err(actual_storage::StorageError::from)?;
-        self.categories.insert(id.clone(), category);
+        self.categories.insert(id.clone(), category.clone());
+        self.budget.register_categories(&[category]);
+        for m in self.budget.initialized_months().clone() {
+            self.ensure_month_initialized(&m);
+        }
         self.undo.push(UndoEntry::CategoryCreated {
             category_id: id.clone(),
         });
@@ -601,6 +650,7 @@ impl BudgetService {
         if !self.categories.contains_key(&cmd.category_id) {
             return Err(ApiError::CategoryNotFound(cmd.category_id.clone()));
         }
+        self.ensure_month_initialized(&cmd.month);
         let previous_amount = self
             .budget
             .get_category_budget(&cmd.month, &cmd.category_id);
@@ -634,6 +684,7 @@ impl BudgetService {
         if !self.categories.contains_key(&cmd.category_id) {
             return Err(ApiError::CategoryNotFound(cmd.category_id.clone()));
         }
+        self.ensure_month_initialized(&cmd.month);
         let previous_carry = self
             .budget
             .get_category_carryover(&cmd.month, &cmd.category_id);
@@ -682,13 +733,14 @@ impl BudgetService {
 
         // Update envelope budget spent amounts.
         let month = cmd.date.format("%Y-%m").to_string();
-        if let Some(ref cat_id) = cmd.category_id {
-            self.budget.set_spent(
-                &month,
-                cat_id,
-                self.budget.get_category_spent(&month, cat_id) + cmd.amount,
-            );
-        }
+        self.ensure_month_initialized(&month);
+        let is_income = cmd
+            .category_id
+            .as_ref()
+            .and_then(|id| self.categories.get(id))
+            .map(|c| c.is_income)
+            .unwrap_or(false);
+        let _ = self.budget.add_transaction(&tx, is_income);
 
         let date_int: i32 = tx.date.format("%Y%m%d").to_string().parse().unwrap_or(0);
         self.store.conn().execute(

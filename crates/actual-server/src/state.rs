@@ -1,7 +1,7 @@
 //! Server shared state, SQLite database schema initialization, and configuration.
 
 use crate::error::ServerError;
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -31,11 +31,21 @@ impl ServerState {
         let conn = Connection::open(&db_path)?;
         Self::init_schema(&conn)?;
 
-        // If an initial password is provided and no password yet exists in DB, bootstrap it
+        // Load existing password from users table if present
+        let db_password: Option<String> = conn
+            .query_row(
+                "SELECT password_hash FROM users WHERE id = 'default'",
+                [],
+                |row| row.get(0),
+            )
+            .optional()?;
+
+        let effective_password = initial_password.or(db_password);
+
         let state = Self {
             db: Arc::new(Mutex::new(conn)),
             data_dir,
-            server_password: Arc::new(Mutex::new(initial_password)),
+            server_password: Arc::new(Mutex::new(effective_password)),
         };
 
         Ok(state)

@@ -1,5 +1,6 @@
 //! User budget archive backup, restore, and file metadata endpoints.
 
+use crate::auth::AuthSession;
 use crate::error::ServerError;
 use crate::state::ServerState;
 use axum::body::Bytes;
@@ -14,6 +15,21 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::fs;
 use uuid::Uuid;
+
+/// Validates file identifiers against directory traversal and malformed inputs.
+pub fn validate_file_id(file_id: &str) -> Result<(), ServerError> {
+    if file_id.is_empty()
+        || file_id.len() > 128
+        || !file_id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+    {
+        return Err(ServerError::BadRequest(format!(
+            "Invalid fileId '{file_id}'"
+        )));
+    }
+    Ok(())
+}
 
 #[derive(Debug, Deserialize)]
 pub struct FileIdQuery {
@@ -49,6 +65,7 @@ pub struct UserFileItem {
 /// Handler for `POST /sync/upload-user-file`.
 pub async fn upload_user_file_handler(
     State(state): State<ServerState>,
+    _session: AuthSession,
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<Response, ServerError> {
@@ -57,6 +74,8 @@ pub async fn upload_user_file_handler(
         .and_then(|v| v.to_str().ok())
         .ok_or_else(|| ServerError::BadRequest("Missing X-Actual-File-Id header".into()))?
         .to_string();
+
+    validate_file_id(&file_id)?;
 
     let name = headers
         .get("X-Actual-Name")
@@ -117,8 +136,10 @@ pub async fn upload_user_file_handler(
 /// Handler for `GET /sync/download-user-file`.
 pub async fn download_user_file_handler(
     State(state): State<ServerState>,
+    _session: AuthSession,
     Query(query): Query<FileIdQuery>,
 ) -> Result<Response, ServerError> {
+    validate_file_id(&query.file_id)?;
     let file_path = state
         .data_dir
         .join("user-files")
@@ -143,6 +164,7 @@ pub async fn download_user_file_handler(
 /// Handler for `GET /sync/list-user-files`.
 pub async fn list_user_files_handler(
     State(state): State<ServerState>,
+    _session: AuthSession,
 ) -> Result<Response, ServerError> {
     let conn = state
         .db
@@ -185,8 +207,10 @@ pub async fn list_user_files_handler(
 /// Handler for `GET /sync/get-user-file-info`.
 pub async fn get_user_file_info_handler(
     State(state): State<ServerState>,
+    _session: AuthSession,
     Query(query): Query<FileIdQuery>,
 ) -> Result<Response, ServerError> {
+    validate_file_id(&query.file_id)?;
     let conn = state
         .db
         .lock()
@@ -228,8 +252,10 @@ pub async fn get_user_file_info_handler(
 /// Handler for `POST /sync/update-user-filename`.
 pub async fn update_user_filename_handler(
     State(state): State<ServerState>,
+    _session: AuthSession,
     Json(payload): Json<UpdateFilenamePayload>,
 ) -> Result<Response, ServerError> {
+    validate_file_id(&payload.file_id)?;
     let now = Utc::now().to_rfc3339();
     let conn = state
         .db
@@ -256,8 +282,10 @@ pub async fn update_user_filename_handler(
 /// Handler for `POST /sync/delete-user-file`.
 pub async fn delete_user_file_handler(
     State(state): State<ServerState>,
+    _session: AuthSession,
     Json(payload): Json<FileIdPayload>,
 ) -> Result<Response, ServerError> {
+    validate_file_id(&payload.file_id)?;
     let now = Utc::now().to_rfc3339();
     let conn = state
         .db
@@ -277,8 +305,10 @@ pub async fn delete_user_file_handler(
 /// Handler for `POST /sync/reset-user-file`.
 pub async fn reset_user_file_handler(
     State(state): State<ServerState>,
+    _session: AuthSession,
     Json(payload): Json<FileIdPayload>,
 ) -> Result<Response, ServerError> {
+    validate_file_id(&payload.file_id)?;
     let new_group_id = Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
 

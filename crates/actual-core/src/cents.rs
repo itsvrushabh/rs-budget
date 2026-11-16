@@ -171,7 +171,8 @@ impl FromStr for Cents {
             return Err(DomainError::CentsParse(s.to_string()));
         }
 
-        let mut cleaned = trimmed.replace(['$', ',', ' '], "");
+        let has_currency_symbol = trimmed.contains(['$', '€', '£', '¥']);
+        let mut cleaned = trimmed.replace(['$', '€', '£', '¥', ',', ' '], "");
         let mut is_negative = false;
 
         // Check for accounting parentheses e.g. (10.50)
@@ -229,9 +230,14 @@ impl FromStr for Cents {
                 .and_then(|m| m.checked_add(minor))
                 .ok_or(DomainError::CentsOverflow)?
         } else {
-            cleaned
+            let parsed = cleaned
                 .parse::<i64>()
-                .map_err(|_| DomainError::CentsParse(s.to_string()))?
+                .map_err(|_| DomainError::CentsParse(s.to_string()))?;
+            if has_currency_symbol {
+                parsed.checked_mul(100).ok_or(DomainError::CentsOverflow)?
+            } else {
+                parsed
+            }
         };
 
         let final_val = if is_negative {

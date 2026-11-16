@@ -10,11 +10,21 @@ pub const PBKDF2_ITERATIONS: u32 = 10_000;
 pub const KEY_LENGTH_BYTES: usize = 32;
 
 /// A 256-bit cryptographic master encryption key compatible with Actual Budget.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Key {
     id: String,
     raw: [u8; KEY_LENGTH_BYTES],
     base64: String,
+}
+
+impl std::fmt::Debug for Key {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Key")
+            .field("id", &self.id)
+            .field("raw", &"[REDACTED]")
+            .field("base64", &"[REDACTED]")
+            .finish()
+    }
 }
 
 impl Key {
