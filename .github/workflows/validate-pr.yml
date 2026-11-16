@@ -18,6 +18,11 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
+          if [ "${{ github.actor }}" = "dependabot[bot]" ]; then
+            echo "✅ Dependabot PR exempted from issue link check."
+            exit 0
+          fi
+
           COMBINED="${PR_TITLE} ${PR_BODY}"
 
           # Match #123, Closes #123, Fixes #123, Relates to #123, etc.
