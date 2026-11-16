@@ -16,6 +16,7 @@ resolver = "2"
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.80"
 license = "MIT"
 authors = ["rs-budget contributors"]
 repository = "https://github.com/itsvrushabh/rs-budget"
