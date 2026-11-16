@@ -112,16 +112,15 @@ impl SyncClient {
         let mut req_bytes = Vec::with_capacity(request.encoded_len());
         request.encode(&mut req_bytes)?;
 
-        let response = ureq::post(&endpoint)
-            .set("Content-Type", "application/actual-sync")
-            .set("X-Actual-Sync-Version", "1")
-            .send_bytes(&req_bytes)
+        let mut response = ureq::post(&endpoint)
+            .header("Content-Type", "application/actual-sync")
+            .header("X-Actual-Sync-Version", "1")
+            .send(req_bytes.as_slice())
             .map_err(|e| SyncError::Network(format!("Sync request failed: {e}")))?;
 
-        let mut resp_bytes = Vec::new();
-        response
-            .into_reader()
-            .read_to_end(&mut resp_bytes)
+        let resp_bytes = response
+            .body_mut()
+            .read_to_vec()
             .map_err(|e| SyncError::Network(format!("Failed to read sync response: {e}")))?;
 
         let sync_resp = SyncResponse::decode(resp_bytes.as_slice())?;

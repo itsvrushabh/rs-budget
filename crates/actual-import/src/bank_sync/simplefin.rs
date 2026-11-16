@@ -108,13 +108,14 @@ impl SimpleFinClient {
         })?;
 
         let claim_url = claim_url.trim();
-        let response = ureq::post(claim_url)
-            .set("Content-Length", "0")
-            .call()
+        let mut response = ureq::post(claim_url)
+            .header("Content-Length", "0")
+            .send_empty()
             .map_err(|e| ImportError::Network(format!("SimpleFIN claim request failed: {e}")))?;
 
         let access_url = response
-            .into_string()
+            .body_mut()
+            .read_to_string()
             .map_err(|e| ImportError::Network(format!("Failed to read claim response: {e}")))?;
 
         Ok(access_url.trim().to_string())
@@ -169,20 +170,20 @@ impl SimpleFinClient {
         end_date: Option<i64>,
     ) -> Result<Vec<(BankSyncAccount, Vec<ImportedTransaction>)>, ImportError> {
         let endpoint = format!("{}/accounts", self.base_url);
-        let mut req = ureq::get(&endpoint).set("Authorization", &self.basic_auth_header());
+        let mut req = ureq::get(&endpoint).header("Authorization", &self.basic_auth_header());
 
         if let Some(s) = start_date {
-            req = req.query("start-date", &s.to_string());
+            req = req.query("start-date", s.to_string());
         }
         if let Some(e) = end_date {
-            req = req.query("end-date", &e.to_string());
+            req = req.query("end-date", e.to_string());
         }
 
-        let resp = req
+        let mut resp = req
             .call()
             .map_err(|e| ImportError::Network(format!("SimpleFIN API request failed: {e}")))?;
 
-        let json_body = resp.into_string().map_err(|e| {
+        let json_body = resp.body_mut().read_to_string().map_err(|e| {
             ImportError::Network(format!("Failed to read SimpleFIN response body: {e}"))
         })?;
 
