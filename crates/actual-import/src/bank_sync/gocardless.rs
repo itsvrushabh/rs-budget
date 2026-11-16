@@ -174,11 +174,14 @@ impl GoCardlessClient {
             "secret_key": self.secret_key,
         });
 
-        let resp = ureq::post(&endpoint)
+        let mut resp = ureq::post(&endpoint)
             .send_json(payload)
             .map_err(|e| ImportError::Network(format!("GoCardless auth failed: {e}")))?;
 
-        let token_resp: TokenResponse = resp.into_json()?;
+        let token_resp: TokenResponse = resp
+            .body_mut()
+            .read_json()
+            .map_err(|e| ImportError::Network(format!("Failed to parse JSON: {e}")))?;
         let now_sec = Utc::now().timestamp();
         self.access_token = Some(token_resp.access);
         self.refresh_token = token_resp.refresh;
@@ -202,11 +205,14 @@ impl GoCardlessClient {
             "refresh": refresh,
         });
 
-        let resp = ureq::post(&endpoint)
+        let mut resp = ureq::post(&endpoint)
             .send_json(payload)
             .map_err(|e| ImportError::Network(format!("GoCardless token refresh failed: {e}")))?;
 
-        let token_resp: TokenResponse = resp.into_json()?;
+        let token_resp: TokenResponse = resp
+            .body_mut()
+            .read_json()
+            .map_err(|e| ImportError::Network(format!("Failed to parse JSON: {e}")))?;
         let now_sec = Utc::now().timestamp();
         self.access_token = Some(token_resp.access);
         self.token_expires_at = token_resp.access_expires.map(|exp| now_sec + exp);
@@ -247,13 +253,16 @@ impl GoCardlessClient {
     ) -> Result<Vec<Institution>, ImportError> {
         let token = self.ensure_token()?.to_string();
         let endpoint = format!("{}/institutions/", self.base_url);
-        let resp = ureq::get(&endpoint)
-            .set("Authorization", &format!("Bearer {token}"))
+        let mut resp = ureq::get(&endpoint)
+            .header("Authorization", &format!("Bearer {token}"))
             .query("country", country_code)
             .call()
             .map_err(|e| ImportError::Network(format!("Failed to list institutions: {e}")))?;
 
-        let json_str = resp.into_string()?;
+        let json_str = resp
+            .body_mut()
+            .read_to_string()
+            .map_err(|e| ImportError::Network(format!("Failed to read institutions: {e}")))?;
         Self::parse_institutions_response(&json_str)
     }
 
@@ -274,12 +283,15 @@ impl GoCardlessClient {
             "access_valid_for_days": 90
         });
 
-        let agreement_resp = ureq::post(&agreement_endpoint)
-            .set("Authorization", &format!("Bearer {token}"))
+        let mut agreement_resp = ureq::post(&agreement_endpoint)
+            .header("Authorization", &format!("Bearer {token}"))
             .send_json(agreement_payload)
             .map_err(|e| ImportError::Network(format!("Failed to create agreement: {e}")))?;
 
-        let agreement: AgreementResponse = agreement_resp.into_json()?;
+        let agreement: AgreementResponse = agreement_resp
+            .body_mut()
+            .read_json()
+            .map_err(|e| ImportError::Network(format!("Failed to parse agreement: {e}")))?;
 
         // 2. Create Requisition
         let req_endpoint = format!("{}/requisitions/", self.base_url);
@@ -290,12 +302,15 @@ impl GoCardlessClient {
             "reference": reference,
         });
 
-        let req_resp = ureq::post(&req_endpoint)
-            .set("Authorization", &format!("Bearer {token}"))
+        let mut req_resp = ureq::post(&req_endpoint)
+            .header("Authorization", &format!("Bearer {token}"))
             .send_json(req_payload)
             .map_err(|e| ImportError::Network(format!("Failed to create requisition: {e}")))?;
 
-        let requisition: RequisitionResponse = req_resp.into_json()?;
+        let requisition: RequisitionResponse = req_resp
+            .body_mut()
+            .read_json()
+            .map_err(|e| ImportError::Network(format!("Failed to parse requisition: {e}")))?;
         Ok(requisition)
     }
 
@@ -306,12 +321,15 @@ impl GoCardlessClient {
     ) -> Result<RequisitionResponse, ImportError> {
         let token = self.ensure_token()?.to_string();
         let endpoint = format!("{}/requisitions/{requisition_id}/", self.base_url);
-        let resp = ureq::get(&endpoint)
-            .set("Authorization", &format!("Bearer {token}"))
+        let mut resp = ureq::get(&endpoint)
+            .header("Authorization", &format!("Bearer {token}"))
             .call()
             .map_err(|e| ImportError::Network(format!("Failed to get requisition: {e}")))?;
 
-        let requisition: RequisitionResponse = resp.into_json()?;
+        let requisition: RequisitionResponse = resp
+            .body_mut()
+            .read_json()
+            .map_err(|e| ImportError::Network(format!("Failed to parse requisition: {e}")))?;
         Ok(requisition)
     }
 
@@ -324,19 +342,25 @@ impl GoCardlessClient {
 
         // Metadata
         let meta_endpoint = format!("{}/accounts/{account_id}/", self.base_url);
-        let meta_resp = ureq::get(&meta_endpoint)
-            .set("Authorization", &format!("Bearer {token}"))
+        let mut meta_resp = ureq::get(&meta_endpoint)
+            .header("Authorization", &format!("Bearer {token}"))
             .call()
             .map_err(|e| ImportError::Network(format!("Failed to fetch account metadata: {e}")))?;
-        let meta_json = meta_resp.into_string()?;
+        let meta_json = meta_resp
+            .body_mut()
+            .read_to_string()
+            .map_err(|e| ImportError::Network(format!("Failed to read metadata: {e}")))?;
 
         // Balances
         let bal_endpoint = format!("{}/accounts/{account_id}/balances/", self.base_url);
-        let bal_resp = ureq::get(&bal_endpoint)
-            .set("Authorization", &format!("Bearer {token}"))
+        let mut bal_resp = ureq::get(&bal_endpoint)
+            .header("Authorization", &format!("Bearer {token}"))
             .call()
             .map_err(|e| ImportError::Network(format!("Failed to fetch account balances: {e}")))?;
-        let bal_json = bal_resp.into_string()?;
+        let bal_json = bal_resp
+            .body_mut()
+            .read_to_string()
+            .map_err(|e| ImportError::Network(format!("Failed to read balances: {e}")))?;
 
         Self::parse_account_details_and_balances(account_id, &meta_json, &bal_json)
     }
@@ -349,17 +373,20 @@ impl GoCardlessClient {
     ) -> Result<Vec<ImportedTransaction>, ImportError> {
         let token = self.ensure_token()?.to_string();
         let endpoint = format!("{}/accounts/{account_id}/transactions/", self.base_url);
-        let mut req = ureq::get(&endpoint).set("Authorization", &format!("Bearer {token}"));
+        let mut req = ureq::get(&endpoint).header("Authorization", &format!("Bearer {token}"));
 
         if let Some(d) = date_from {
-            req = req.query("date_from", &d.format("%Y-%m-%d").to_string());
+            req = req.query("date_from", d.format("%Y-%m-%d").to_string());
         }
 
-        let resp = req.call().map_err(|e| {
+        let mut resp = req.call().map_err(|e| {
             ImportError::Network(format!("Failed to fetch account transactions: {e}"))
         })?;
 
-        let json_str = resp.into_string()?;
+        let json_str = resp
+            .body_mut()
+            .read_to_string()
+            .map_err(|e| ImportError::Network(format!("Failed to read transactions: {e}")))?;
         Self::parse_transactions_response(&json_str)
     }
 

@@ -409,7 +409,7 @@ fn test_end_to_end_mock_http_simplefin_sync() {
 
         assert!(req_str.starts_with("GET /accounts"));
         // Verify Basic Auth header was delivered
-        assert!(req_str.contains("Authorization: Basic "));
+        assert!(req_str.to_lowercase().contains("authorization: basic "));
 
         let body = r#"{
             "errors": [],
