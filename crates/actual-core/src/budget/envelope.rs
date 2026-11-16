@@ -473,7 +473,7 @@ impl EnvelopeBudget {
                 let lmo_refs: Vec<&str> = lmo_deps.iter().map(String::as_str).collect();
                 sheet.set_dynamic(&lmo_cell, &lmo_refs, |args| {
                     let mut overspent = Cents::ZERO;
-                    for chunk in args.as_chunks::<2>().0 {
+                    for chunk in args.chunks_exact(2) {
                         let leftover = chunk[0].as_cents();
                         let carryover = chunk[1].as_bool();
                         if !carryover && leftover.is_negative() {
