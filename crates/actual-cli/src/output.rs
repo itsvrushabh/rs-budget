@@ -25,7 +25,7 @@ pub fn format_dollars(cents: Cents) -> String {
     let len = chars.len();
 
     for (i, ch) in chars.into_iter().enumerate() {
-        if i > 0 && (len - i).is_multiple_of(3) {
+        if i > 0 && (len - i) % 3 == 0 {
             formatted_dollars.push(',');
         }
         formatted_dollars.push(ch);
