@@ -81,6 +81,12 @@ fn test_cents_parsing_formats() {
         "$1,234.56".parse::<Cents>().unwrap(),
         Cents::from_cents(123456)
     );
+    assert_eq!("$100".parse::<Cents>().unwrap(), Cents::from_cents(10000));
+    assert_eq!("-$50".parse::<Cents>().unwrap(), Cents::from_cents(-5000));
+    assert_eq!(
+        "$1,000".parse::<Cents>().unwrap(),
+        Cents::from_cents(100000)
+    );
     assert_eq!("1234".parse::<Cents>().unwrap(), Cents::from_cents(1234));
     assert_eq!("0.5".parse::<Cents>().unwrap(), Cents::from_cents(50));
     assert_eq!("0.05".parse::<Cents>().unwrap(), Cents::from_cents(5));

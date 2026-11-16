@@ -31,6 +31,20 @@ impl FromRequestParts<ServerState> for AuthSession {
         parts: &mut Parts,
         state: &ServerState,
     ) -> Result<Self, Self::Rejection> {
+        let has_password = {
+            let pass = state
+                .server_password
+                .lock()
+                .map_err(|e| ServerError::Internal(e.to_string()))?;
+            pass.is_some()
+        };
+
+        if !has_password {
+            return Ok(AuthSession {
+                token: String::new(),
+            });
+        }
+
         let token = extract_token(&parts.headers).ok_or(ServerError::Unauthorized)?;
 
         // Verify token in database
@@ -129,8 +143,22 @@ pub async fn bootstrap_handler(
         ));
     }
 
-    *pass_lock = Some(payload.password);
+    *pass_lock = Some(payload.password.clone());
     drop(pass_lock);
+
+    // Persist password to users table
+    {
+        let conn = state
+            .db
+            .lock()
+            .map_err(|e| ServerError::Internal(e.to_string()))?;
+        let now = Utc::now().to_rfc3339();
+        conn.execute(
+            "INSERT INTO users (id, password_hash, salt, created_at) VALUES ('default', ?1, '', ?2)
+             ON CONFLICT(id) DO UPDATE SET password_hash = ?1",
+            params![payload.password, now],
+        )?;
+    }
 
     // Create session token
     let token = create_session(&state)?;

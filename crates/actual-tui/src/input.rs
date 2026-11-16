@@ -149,6 +149,9 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
         KeyCode::Char('e') | KeyCode::Enter if app.active_view == ActiveView::Budget => {
             app.open_edit_budget();
         }
+        KeyCode::Char('c') if app.active_view == ActiveView::Budget => {
+            app.toggle_selected_carryover();
+        }
         KeyCode::Char('a') => {
             app.open_add_transaction();
         }

@@ -12,6 +12,31 @@ use crate::error::ImportError;
 use crate::models::ImportedTransaction;
 use crate::qif::parse_amount;
 
+fn trnamt_re() -> &'static Regex {
+    static RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    RE.get_or_init(|| Regex::new(r"(?i)<TRNAMT>([^<\r\n]+)").unwrap())
+}
+
+fn dtposted_re() -> &'static Regex {
+    static RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    RE.get_or_init(|| Regex::new(r"(?i)<DTPOSTED>([^<\r\n]+)").unwrap())
+}
+
+fn fitid_re() -> &'static Regex {
+    static RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    RE.get_or_init(|| Regex::new(r"(?i)<FITID>([^<\r\n]+)").unwrap())
+}
+
+fn name_re() -> &'static Regex {
+    static RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    RE.get_or_init(|| Regex::new(r"(?i)<NAME>([^<\r\n]+)").unwrap())
+}
+
+fn memo_re() -> &'static Regex {
+    static RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    RE.get_or_init(|| Regex::new(r"(?i)<MEMO>([^<\r\n]+)").unwrap())
+}
+
 /// OFX / QFX Statement Parser.
 pub struct OfxParser {
     cleaner: PayeeCleaner,
@@ -39,11 +64,11 @@ impl OfxParser {
     pub fn parse(&self, content: &str) -> Result<Vec<ImportedTransaction>, ImportError> {
         let mut transactions = Vec::new();
 
-        let trnamt_re = Regex::new(r"(?i)<TRNAMT>([^<\r\n]+)").unwrap();
-        let dtposted_re = Regex::new(r"(?i)<DTPOSTED>([^<\r\n]+)").unwrap();
-        let fitid_re = Regex::new(r"(?i)<FITID>([^<\r\n]+)").unwrap();
-        let name_re = Regex::new(r"(?i)<NAME>([^<\r\n]+)").unwrap();
-        let memo_re = Regex::new(r"(?i)<MEMO>([^<\r\n]+)").unwrap();
+        let trnamt = trnamt_re();
+        let dtposted = dtposted_re();
+        let fitid = fitid_re();
+        let name = name_re();
+        let memo = memo_re();
 
         let lower = content.to_ascii_lowercase();
         let tag = "<stmttrn>";
@@ -66,34 +91,34 @@ impl OfxParser {
             start_idx = block_start + end_offset;
 
             // 1. Amount
-            let amount = if let Some(amt_cap) = trnamt_re.captures(block) {
+            let amount = if let Some(amt_cap) = trnamt.captures(block) {
                 parse_amount(&amt_cap[1])?
             } else {
                 continue;
             };
 
             // 2. Date
-            let date = if let Some(dt_cap) = dtposted_re.captures(block) {
+            let date = if let Some(dt_cap) = dtposted.captures(block) {
                 parse_ofx_date(&dt_cap[1])?
             } else {
                 continue;
             };
 
             // 3. FITID
-            let fitid = fitid_re.captures(block).map(|c| c[1].trim().to_string());
+            let fitid_val = fitid.captures(block).map(|c| c[1].trim().to_string());
 
             // 4. Payee name
-            let raw_payee = name_re.captures(block).map(|c| c[1].trim().to_string());
+            let raw_payee = name.captures(block).map(|c| c[1].trim().to_string());
             let cleaned_payee = raw_payee.as_deref().and_then(|p| self.cleaner.clean(p));
 
             // 5. Memo
-            let memo = memo_re.captures(block).map(|c| c[1].trim().to_string());
+            let memo_val = memo.captures(block).map(|c| c[1].trim().to_string());
 
             let mut tx = ImportedTransaction::new(date, amount);
-            tx.imported_id = fitid;
+            tx.imported_id = fitid_val;
             tx.imported_payee = raw_payee;
             tx.payee = cleaned_payee;
-            tx.notes = memo;
+            tx.notes = memo_val;
             tx.cleared = true;
 
             transactions.push(tx);

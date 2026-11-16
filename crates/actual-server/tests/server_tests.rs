@@ -450,3 +450,59 @@ async fn test_server_static_web_assets_and_spa_fallback() {
         .expect("parse json");
     assert_eq!(api_resp["data"]["bootstrapped"], false);
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_server_path_traversal_protection() {
+    let (base_url, _) = spawn_test_server().await;
+
+    // Malicious fileId with path traversal attempt
+    let bad_upload = ureq::post(&format!("{base_url}/sync/upload-user-file"))
+        .set("X-Actual-File-Id", "../../etc/passwd")
+        .set("X-Actual-Name", "Evil Budget")
+        .set("X-Actual-Group-Id", "evil-group")
+        .send_bytes(b"MALICIOUS_DATA");
+
+    assert!(
+        bad_upload.is_err(),
+        "path traversal upload must be rejected"
+    );
+
+    let bad_download = ureq::get(&format!(
+        "{base_url}/sync/download-user-file?fileId=../../etc/passwd"
+    ))
+    .call();
+
+    assert!(
+        bad_download.is_err(),
+        "path traversal download must be rejected"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_server_authenticated_file_access() {
+    let (base_url, _) = spawn_test_server().await;
+
+    // 1. Bootstrap server with password
+    let bootstrap_resp: Value = ureq::post(&format!("{base_url}/account/bootstrap"))
+        .send_json(serde_json::json!({ "password": "protected-password-123" }))
+        .expect("bootstrap req")
+        .into_json()
+        .expect("parse json");
+    let token = bootstrap_resp["data"]["token"].as_str().unwrap();
+
+    // 2. Unauthenticated request without token must fail (401)
+    let unauth_list = ureq::get(&format!("{base_url}/sync/list-user-files")).call();
+    assert!(
+        unauth_list.is_err(),
+        "request without token must be rejected when bootstrapped"
+    );
+
+    // 3. Authenticated request with token succeeds
+    let auth_list: Value = ureq::get(&format!("{base_url}/sync/list-user-files"))
+        .set("X-Actual-Token", token)
+        .call()
+        .expect("auth list req")
+        .into_json()
+        .expect("parse json");
+    assert_eq!(auth_list["status"], "ok");
+}

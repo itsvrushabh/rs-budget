@@ -158,3 +158,41 @@ fn test_tui_render_with_test_backend() {
     assert!(content.contains("Envelope Budget Allocation") || content.contains("CATEGORY"));
     assert!(content.contains("To Budget"));
 }
+
+#[test]
+fn test_carryover_toggle_keybinding() {
+    let svc = BudgetService::open_in_memory().unwrap();
+    let mut app = App::new(svc);
+
+    // Move cursor down to first category item
+    input::handle_key(&mut app, key(KeyCode::Char('j')));
+    assert_eq!(app.budget_cursor, 1);
+
+    // Initial carryover is false
+    let items = app.build_budget_items();
+    if let app::BudgetItem::Category { carryover, .. } = &items[1] {
+        assert!(!carryover);
+    } else {
+        panic!("expected category at cursor 1");
+    }
+
+    // Press 'c' to toggle carryover
+    input::handle_key(&mut app, key(KeyCode::Char('c')));
+
+    let items_after = app.build_budget_items();
+    if let app::BudgetItem::Category { carryover, .. } = &items_after[1] {
+        assert!(*carryover);
+    } else {
+        panic!("expected category at cursor 1");
+    }
+
+    // Press 'c' again to toggle back off
+    input::handle_key(&mut app, key(KeyCode::Char('c')));
+
+    let items_final = app.build_budget_items();
+    if let app::BudgetItem::Category { carryover, .. } = &items_final[1] {
+        assert!(!carryover);
+    } else {
+        panic!("expected category at cursor 1");
+    }
+}
