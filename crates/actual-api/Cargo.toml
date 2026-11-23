@@ -15,7 +15,7 @@ actual-sync = { path = "../actual-sync", version = "0.1.0" }
 thiserror = "2.0"
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1", features = ["v4"] }
-rusqlite = "0.42"
+rusqlite = "0.43"
 
 [dev-dependencies]
 actual-crypto = { path = "../actual-crypto", version = "0.1.0" }
