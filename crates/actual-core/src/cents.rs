@@ -62,6 +62,88 @@ impl Cents {
         Self::new(total)
     }
 
+    /// Parses a user-entered monetary amount string into `Cents`.
+    ///
+    /// Unlike raw cent serialization (`from_str`), if no decimal point is present (e.g. `"100"` or `"$100"`),
+    /// the value is interpreted as whole major units ($100.00 = 10,000 cents).
+    /// If a decimal point is present (e.g. `"10.50"` or `"$10.50"`), it parses major and minor units.
+    /// Also handles commas, currency symbols (`$`, `€`, `£`, `¥`), signs, and accounting parentheses `(100)`.
+    pub fn from_user_input(s: &str) -> Result<Self, DomainError> {
+        let trimmed = s.trim();
+        if trimmed.is_empty() {
+            return Err(DomainError::CentsParse(s.to_string()));
+        }
+
+        let mut cleaned = trimmed.replace(['$', '€', '£', '¥', ',', ' '], "");
+        let mut is_negative = false;
+
+        // Check for accounting parentheses e.g. (10.50)
+        if cleaned.starts_with('(') && cleaned.ends_with(')') {
+            is_negative = true;
+            cleaned = cleaned[1..cleaned.len() - 1].to_string();
+        }
+
+        if let Some(rest) = cleaned.strip_prefix('-') {
+            is_negative = true;
+            cleaned = rest.to_string();
+        } else if let Some(rest) = cleaned.strip_prefix('+') {
+            cleaned = rest.to_string();
+        }
+
+        if cleaned.is_empty() {
+            return Err(DomainError::CentsParse(s.to_string()));
+        }
+
+        let total_cents = if let Some(dot_idx) = cleaned.find('.') {
+            let (major_str, minor_raw) = cleaned.split_at(dot_idx);
+            let minor_str = &minor_raw[1..];
+
+            let major = if major_str.is_empty() {
+                0i64
+            } else {
+                major_str
+                    .parse::<i64>()
+                    .map_err(|_| DomainError::CentsParse(s.to_string()))?
+            };
+
+            let minor = match minor_str.len() {
+                0 => 0i64,
+                1 => {
+                    minor_str
+                        .parse::<i64>()
+                        .map_err(|_| DomainError::CentsParse(s.to_string()))?
+                        * 10
+                }
+                2 => minor_str
+                    .parse::<i64>()
+                    .map_err(|_| DomainError::CentsParse(s.to_string()))?,
+                _ => {
+                    let truncated = &minor_str[..2];
+                    truncated
+                        .parse::<i64>()
+                        .map_err(|_| DomainError::CentsParse(s.to_string()))?
+                }
+            };
+
+            major
+                .checked_mul(100)
+                .and_then(|m| m.checked_add(minor))
+                .ok_or(DomainError::CentsOverflow)?
+        } else {
+            let parsed = cleaned
+                .parse::<i64>()
+                .map_err(|_| DomainError::CentsParse(s.to_string()))?;
+            parsed.checked_mul(100).ok_or(DomainError::CentsOverflow)?
+        };
+
+        let signed = if is_negative {
+            -total_cents
+        } else {
+            total_cents
+        };
+        Self::new(signed)
+    }
+
     /// Returns the raw integer cent value.
     #[must_use]
     pub const fn as_cents(self) -> i64 {

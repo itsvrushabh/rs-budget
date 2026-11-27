@@ -965,3 +965,182 @@ fn test_budget_service_envelope_calculations() {
     assert_eq!(budget.get_total_budgeted(month), dollars(500));
     assert_eq!(budget.get_total_spent(month), dollars(-150));
 }
+
+#[test]
+fn test_transaction_update_and_delete_dag_recalculation() {
+    let mut svc = BudgetService::open_in_memory().unwrap();
+    let acc_id = svc
+        .create_account(CreateAccount {
+            id: "acc-dag".into(),
+            name: "Checking".into(),
+            offbudget: false,
+        })
+        .unwrap();
+
+    let grp_id = svc
+        .create_category_group(CreateCategoryGroup {
+            id: "grp-dag".into(),
+            name: "Expenses".into(),
+            is_income: false,
+        })
+        .unwrap();
+
+    let cat_id = svc
+        .create_category(CreateCategory {
+            id: "cat-dag".into(),
+            name: "Dining".into(),
+            group_id: grp_id,
+            is_income: false,
+        })
+        .unwrap();
+
+    let month = "2026-11";
+    svc.set_budget(SetBudget {
+        month: month.into(),
+        category_id: cat_id.clone(),
+        amount: dollars(200),
+    })
+    .unwrap();
+
+    // 1. Add transaction -$50
+    svc.add_transaction(AddTransaction {
+        id: "tx-dag-1".into(),
+        account_id: acc_id,
+        date: NaiveDate::from_ymd_opt(2026, 11, 12).unwrap(),
+        amount: dollars(-50),
+        payee_id: None,
+        category_id: Some(cat_id.clone()),
+        notes: None,
+        cleared: true,
+    })
+    .unwrap();
+
+    assert_eq!(
+        svc.budget().get_category_spent(month, &cat_id),
+        dollars(-50)
+    );
+    assert_eq!(
+        svc.budget().get_category_leftover(month, &cat_id),
+        dollars(150)
+    );
+
+    // 2. Update transaction amount from -$50 to -$80
+    svc.update_transaction(UpdateTransaction {
+        transaction_id: "tx-dag-1".into(),
+        date: None,
+        amount: Some(dollars(-80)),
+        payee_id: None,
+        category_id: None,
+        notes: None,
+        cleared: None,
+    })
+    .unwrap();
+
+    assert_eq!(
+        svc.budget().get_category_spent(month, &cat_id),
+        dollars(-80)
+    );
+    assert_eq!(
+        svc.budget().get_category_leftover(month, &cat_id),
+        dollars(120)
+    );
+
+    // 3. Delete transaction
+    svc.delete_transaction(DeleteTransaction {
+        transaction_id: "tx-dag-1".into(),
+    })
+    .unwrap();
+
+    assert_eq!(svc.budget().get_category_spent(month, &cat_id), dollars(0));
+    assert_eq!(
+        svc.budget().get_category_leftover(month, &cat_id),
+        dollars(200)
+    );
+}
+
+#[test]
+fn test_sqlite_persistence_across_service_reopen() {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let db_path = temp_dir.path().join("budget.sqlite");
+
+    // 1. Create and populate budget
+    {
+        let mut svc = BudgetService::open(&db_path).unwrap();
+        let acc_id = svc
+            .create_account(CreateAccount {
+                id: "acc-persist".into(),
+                name: "Savings".into(),
+                offbudget: false,
+            })
+            .unwrap();
+
+        let payee_id = svc
+            .create_payee(CreatePayee {
+                id: "payee-store".into(),
+                name: "Coffee Shop".into(),
+            })
+            .unwrap();
+
+        let grp_id = svc
+            .create_category_group(CreateCategoryGroup {
+                id: "grp-persist".into(),
+                name: "Personal".into(),
+                is_income: false,
+            })
+            .unwrap();
+
+        let cat_id = svc
+            .create_category(CreateCategory {
+                id: "cat-persist".into(),
+                name: "Coffee".into(),
+                group_id: grp_id,
+                is_income: false,
+            })
+            .unwrap();
+
+        let tx_id = svc
+            .add_transaction(AddTransaction {
+                id: "tx-persist-1".into(),
+                account_id: acc_id,
+                date: NaiveDate::from_ymd_opt(2026, 11, 15).unwrap(),
+                amount: dollars(-5),
+                payee_id: Some(payee_id.clone()),
+                category_id: Some(cat_id.clone()),
+                notes: Some("Latte".into()),
+                cleared: true,
+            })
+            .unwrap();
+
+        // Update payee name
+        svc.rename_payee(RenamePayee {
+            payee_id,
+            new_name: "Artisan Coffee".into(),
+        })
+        .unwrap();
+
+        // Update transaction amount
+        svc.update_transaction(UpdateTransaction {
+            transaction_id: tx_id,
+            date: None,
+            amount: Some(dollars(-7)),
+            payee_id: None,
+            category_id: None,
+            notes: Some(Some("Large Latte".into())),
+            cleared: None,
+        })
+        .unwrap();
+    }
+
+    // 2. Re-open from disk and verify persistence
+    {
+        let svc = BudgetService::open(&db_path).unwrap();
+        assert_eq!(svc.account("acc-persist").unwrap().name, "Savings");
+        assert_eq!(svc.payee("payee-store").unwrap().name, "Artisan Coffee");
+        assert_eq!(svc.category("cat-persist").unwrap().name, "Coffee");
+
+        let tx = svc.transactions_for_account("acc-persist");
+        assert_eq!(tx.len(), 1);
+        assert_eq!(tx[0].amount, dollars(-7));
+        assert_eq!(tx[0].notes.as_deref(), Some("Large Latte"));
+    }
+}

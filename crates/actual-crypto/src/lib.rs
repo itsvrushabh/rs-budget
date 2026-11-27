@@ -15,7 +15,9 @@ pub use cipher::{
     AUTH_TAG_LENGTH_BYTES, ENCRYPTION_ALGORITHM, IV_LENGTH_BYTES,
 };
 pub use error::CryptoError;
-pub use key::{Key, KeySerialized, KEY_LENGTH_BYTES, PBKDF2_ITERATIONS};
+pub use key::{
+    hash_password, verify_password, Key, KeySerialized, KEY_LENGTH_BYTES, PBKDF2_ITERATIONS,
+};
 #[cfg(not(target_arch = "wasm32"))]
 pub use rotation::KeyRotator;
 pub use store::KeyStore;

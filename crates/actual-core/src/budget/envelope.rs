@@ -577,6 +577,43 @@ impl EnvelopeBudget {
         }
     }
 
+    /// Removes a transaction from the budget, updating category spent amounts or uncategorized income.
+    ///
+    /// # Errors
+    /// Returns [`DomainError::InvalidMonthFormat`] if the transaction date cannot be mapped.
+    pub fn remove_transaction(
+        &mut self,
+        tx: &Transaction,
+        is_income: bool,
+    ) -> Result<(), DomainError> {
+        let month = tx.date.format("%Y-%m").to_string();
+        if !self.initialized_months.contains(&month) {
+            return Ok(());
+        }
+
+        if tx.is_split_parent() && !tx.subtransactions.is_empty() {
+            for sub in &tx.subtransactions {
+                self.remove_single_transaction(&month, sub, is_income);
+            }
+        } else {
+            self.remove_single_transaction(&month, tx, is_income);
+        }
+
+        Ok(())
+    }
+
+    fn remove_single_transaction(&mut self, month: &str, tx: &Transaction, _is_income: bool) {
+        if let Some(cat_id) = &tx.category_id {
+            let cell = cell_spent(month, cat_id);
+            let current = self.spreadsheet.get_cents(&cell);
+            self.spreadsheet.set_static(&cell, current - tx.amount);
+        } else {
+            let cell = cell_uncategorized_income(month);
+            let current = self.spreadsheet.get_cents(&cell);
+            self.spreadsheet.set_static(&cell, current - tx.amount);
+        }
+    }
+
     /// Executes multiple updates in a batch transaction, deferring DAG recomputation until completion.
     pub fn transaction<F, R>(&mut self, f: F) -> Result<R, DomainError>
     where

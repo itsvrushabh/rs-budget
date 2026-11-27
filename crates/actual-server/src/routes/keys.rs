@@ -2,6 +2,7 @@
 
 use crate::auth::AuthSession;
 use crate::error::ServerError;
+use crate::routes::user_files::validate_file_id;
 use crate::state::ServerState;
 use axum::extract::State;
 use axum::response::{IntoResponse, Response};
@@ -45,6 +46,7 @@ pub async fn get_key_handler(
     _session: AuthSession,
     Json(payload): Json<GetKeyPayload>,
 ) -> Result<Response, ServerError> {
+    validate_file_id(&payload.file_id)?;
     let conn = state
         .db
         .lock()
@@ -80,6 +82,7 @@ pub async fn create_key_handler(
     _session: AuthSession,
     Json(payload): Json<CreateKeyPayload>,
 ) -> Result<Response, ServerError> {
+    validate_file_id(&payload.file_id)?;
     let conn = state
         .db
         .lock()
