@@ -98,6 +98,40 @@ fn test_cents_parsing_formats() {
 }
 
 #[test]
+fn test_cents_from_user_input() {
+    assert_eq!(
+        Cents::from_user_input("100").unwrap(),
+        Cents::from_cents(10000)
+    );
+    assert_eq!(
+        Cents::from_user_input("$100").unwrap(),
+        Cents::from_cents(10000)
+    );
+    assert_eq!(
+        Cents::from_user_input("-50").unwrap(),
+        Cents::from_cents(-5000)
+    );
+    assert_eq!(
+        Cents::from_user_input("-$50").unwrap(),
+        Cents::from_cents(-5000)
+    );
+    assert_eq!(
+        Cents::from_user_input("10.50").unwrap(),
+        Cents::from_cents(1050)
+    );
+    assert_eq!(
+        Cents::from_user_input("$1,234.56").unwrap(),
+        Cents::from_cents(123456)
+    );
+    assert_eq!(
+        Cents::from_user_input("(150)").unwrap(),
+        Cents::from_cents(-15000)
+    );
+    assert!(Cents::from_user_input("").is_err());
+    assert!(Cents::from_user_input("abc").is_err());
+}
+
+#[test]
 fn test_account_creation_and_activity() {
     let mut acct = Account::new("acct-1", "Checking");
     assert!(acct.is_on_budget());

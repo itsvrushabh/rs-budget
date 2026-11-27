@@ -226,8 +226,7 @@ impl App {
 
     /// Commit the edited budget amount.
     pub fn commit_edit_budget(&mut self) {
-        if let Ok(amount) = self.edit_amount_input.trim().parse::<f64>() {
-            let cents = Cents::from_cents((amount * 100.0).round() as i64);
+        if let Ok(cents) = Cents::from_user_input(self.edit_amount_input.trim()) {
             let m = self.current_month_str();
             let _ = self.svc.set_budget(SetBudget {
                 month: m,
@@ -290,8 +289,7 @@ impl App {
                 .unwrap()
         };
 
-        let amount_f64 = self.add_tx_amount.trim().parse::<f64>().unwrap_or(0.0);
-        let cents = Cents::from_cents((amount_f64 * 100.0).round() as i64);
+        let cents = Cents::from_user_input(self.add_tx_amount.trim()).unwrap_or(Cents::ZERO);
 
         let payee = if self.add_tx_payee.trim().is_empty() {
             None

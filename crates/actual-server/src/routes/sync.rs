@@ -2,6 +2,7 @@
 
 use crate::auth::AuthSession;
 use crate::error::ServerError;
+use crate::routes::user_files::validate_file_id;
 use crate::state::ServerState;
 use actual_sync::proto::{MessageEnvelope, SyncRequest, SyncResponse};
 use actual_sync::timestamp::Timestamp;
@@ -24,6 +25,7 @@ pub async fn sync_handler(
     body: Bytes,
 ) -> Result<Response, ServerError> {
     let req = SyncRequest::decode(body.as_ref())?;
+    validate_file_id(&req.file_id)?;
 
     let file_id = req.file_id;
     let group_id = req.group_id;

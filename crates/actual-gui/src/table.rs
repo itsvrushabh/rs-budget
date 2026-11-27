@@ -46,8 +46,7 @@ impl CellValue {
                 if trimmed.is_empty() {
                     Ok(Self::Currency(Cents::ZERO))
                 } else {
-                    trimmed
-                        .parse::<Cents>()
+                    Cents::from_user_input(trimmed)
                         .map(Self::Currency)
                         .map_err(|e| format!("Invalid currency format: {e}"))
                 }

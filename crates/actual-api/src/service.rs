@@ -165,7 +165,7 @@ impl BudgetService {
         // Load transactions
         {
             let mut stmt = self.store.conn().prepare(
-                "SELECT id, acct, date, amount, description, notes, category, financial_id, imported_description, cleared, tombstone FROM transactions",
+                "SELECT id, acct, date, amount, description, notes, category, financial_id, imported_description, cleared, tombstone, isParent, isChild, parent_id FROM transactions",
             )?;
             let rows = stmt.query_map([], |row| {
                 let id: String = row.get(0)?;
@@ -179,6 +179,9 @@ impl BudgetService {
                 let imported_payee: Option<String> = row.get(8)?;
                 let cleared: bool = row.get::<_, i32>(9)? != 0;
                 let tombstone: bool = row.get::<_, i32>(10)? != 0;
+                let is_parent: bool = row.get::<_, Option<i32>>(11)?.unwrap_or(0) != 0;
+                let is_child: bool = row.get::<_, Option<i32>>(12)?.unwrap_or(0) != 0;
+                let parent_id: Option<String> = row.get(13)?;
 
                 let year = date_int / 10000;
                 let month = (date_int % 10000) / 100;
@@ -199,6 +202,9 @@ impl BudgetService {
                 tx.imported_payee = imported_payee;
                 tx.cleared = cleared;
                 tx.tombstone = tombstone;
+                tx.is_parent = is_parent;
+                tx.is_child = is_child;
+                tx.parent_id = parent_id;
                 Ok((id, tx))
             })?;
             for r in rows {
@@ -433,6 +439,14 @@ impl BudgetService {
             cmd.id.clone()
         };
         let payee = Payee::new(&id, &cmd.name);
+        self.store
+            .conn()
+            .execute(
+                "INSERT INTO payees (id, name, tombstone, transfer_acct) VALUES (?1, ?2, 0, ?3)
+                 ON CONFLICT(id) DO UPDATE SET name=excluded.name, tombstone=excluded.tombstone, transfer_acct=excluded.transfer_acct",
+                rusqlite::params![id, payee.name, payee.transfer_acct],
+            )
+            .map_err(actual_storage::StorageError::from)?;
         self.payees.insert(id.clone(), payee);
         self.undo.push(UndoEntry::PayeeCreated {
             payee_id: id.clone(),
@@ -450,6 +464,13 @@ impl BudgetService {
             .get(&cmd.payee_id)
             .ok_or_else(|| ApiError::PayeeNotFound(cmd.payee_id.clone()))?;
         let undo_entry = UndoManager::snapshot_payee_rename(payee);
+        self.store
+            .conn()
+            .execute(
+                "UPDATE payees SET name = ?1 WHERE id = ?2",
+                rusqlite::params![cmd.new_name, cmd.payee_id],
+            )
+            .map_err(actual_storage::StorageError::from)?;
         let payee = self.payees.get_mut(&cmd.payee_id).unwrap();
         payee.name = cmd.new_name;
         self.undo.push(undo_entry);
@@ -471,6 +492,21 @@ impl BudgetService {
             return Err(ApiError::PayeeNotFound(cmd.target_payee_id.clone()));
         }
         let restored_payee = self.payees[&cmd.source_payee_id].clone();
+
+        self.store
+            .conn()
+            .execute(
+                "UPDATE transactions SET description = ?1 WHERE description = ?2",
+                rusqlite::params![cmd.target_payee_id, cmd.source_payee_id],
+            )
+            .map_err(actual_storage::StorageError::from)?;
+        self.store
+            .conn()
+            .execute(
+                "UPDATE payees SET tombstone = 1 WHERE id = ?1",
+                rusqlite::params![cmd.source_payee_id],
+            )
+            .map_err(actual_storage::StorageError::from)?;
 
         let mut affected_ids = Vec::new();
         for (id, tx) in self.transactions.iter_mut() {
@@ -775,11 +811,13 @@ impl BudgetService {
     /// # Errors
     /// Returns [`ApiError::TransactionNotFound`] if the transaction does not exist.
     pub fn update_transaction(&mut self, cmd: UpdateTransaction) -> Result<(), ApiError> {
-        let tx = self
+        let old_tx = self
             .transactions
             .get(&cmd.transaction_id)
-            .ok_or_else(|| ApiError::TransactionNotFound(cmd.transaction_id.clone()))?;
-        let previous = tx.clone();
+            .ok_or_else(|| ApiError::TransactionNotFound(cmd.transaction_id.clone()))?
+            .clone();
+        let previous = old_tx.clone();
+
         let tx = self.transactions.get_mut(&cmd.transaction_id).unwrap();
         if let Some(date) = cmd.date {
             tx.date = date;
@@ -799,6 +837,53 @@ impl BudgetService {
         if let Some(cleared) = cmd.cleared {
             tx.cleared = cleared;
         }
+        let updated_tx = tx.clone();
+
+        // Update reactive DAG
+        if !old_tx.tombstone {
+            let old_is_income = old_tx
+                .category_id
+                .as_ref()
+                .and_then(|id| self.categories.get(id))
+                .map(|c| c.is_income)
+                .unwrap_or(false);
+            let _ = self.budget.remove_transaction(&old_tx, old_is_income);
+        }
+
+        if !updated_tx.tombstone {
+            let new_is_income = updated_tx
+                .category_id
+                .as_ref()
+                .and_then(|id| self.categories.get(id))
+                .map(|c| c.is_income)
+                .unwrap_or(false);
+            let _ = self.budget.add_transaction(&updated_tx, new_is_income);
+        }
+
+        // Update SQLite
+        let date_int: i32 = updated_tx
+            .date
+            .format("%Y%m%d")
+            .to_string()
+            .parse()
+            .unwrap_or(0);
+        self.store
+            .conn()
+            .execute(
+                "UPDATE transactions SET acct = ?1, date = ?2, amount = ?3, description = ?4, notes = ?5, category = ?6, cleared = ?7 WHERE id = ?8",
+                rusqlite::params![
+                    updated_tx.account_id,
+                    date_int,
+                    updated_tx.amount.as_cents(),
+                    updated_tx.payee_id,
+                    updated_tx.notes,
+                    updated_tx.category_id,
+                    updated_tx.cleared as i32,
+                    updated_tx.id,
+                ],
+            )
+            .map_err(actual_storage::StorageError::from)?;
+
         self.undo.push(UndoEntry::TransactionUpdated { previous });
         Ok(())
     }
@@ -819,6 +904,15 @@ impl BudgetService {
                 rusqlite::params![cmd.transaction_id],
             )
             .map_err(actual_storage::StorageError::from)?;
+
+        let is_income = tx
+            .category_id
+            .as_ref()
+            .and_then(|id| self.categories.get(id))
+            .map(|c| c.is_income)
+            .unwrap_or(false);
+        let _ = self.budget.remove_transaction(tx, is_income);
+
         let restored = tx.clone();
         tx.tombstone = true;
         self.undo.push(UndoEntry::TransactionDeleted { restored });
@@ -863,9 +957,33 @@ impl BudgetService {
             parent_mut.is_parent = true;
         }
 
+        self.store
+            .conn()
+            .execute(
+                "UPDATE transactions SET isParent = 1 WHERE id = ?1",
+                rusqlite::params![cmd.parent_transaction_id],
+            )
+            .map_err(actual_storage::StorageError::from)?;
+
+        // Remove un-split parent from budget spending if categorized
+        let parent_is_income = parent_snap
+            .category_id
+            .as_ref()
+            .and_then(|id| self.categories.get(id))
+            .map(|c| c.is_income)
+            .unwrap_or(false);
+        let _ = self
+            .budget
+            .remove_transaction(&parent_snap, parent_is_income);
+
         let parent_id = cmd.parent_transaction_id.clone();
         let parent_account_id = self.transactions[&parent_id].account_id.clone();
         let parent_date = self.transactions[&parent_id].date;
+        let date_int: i32 = parent_date
+            .format("%Y%m%d")
+            .to_string()
+            .parse()
+            .unwrap_or(0);
 
         let mut child_ids = Vec::new();
         for (cat_id, amount, notes) in &cmd.splits {
@@ -875,6 +993,33 @@ impl BudgetService {
             child.notes = notes.clone();
             child.is_child = true;
             child.parent_id = Some(parent_id.clone());
+
+            self.store
+                .conn()
+                .execute(
+                    "INSERT INTO transactions (id, isParent, isChild, parent_id, acct, date, amount, description, notes, category, financial_id, imported_description, cleared, tombstone)
+                     VALUES (?1, 0, 1, ?2, ?3, ?4, ?5, NULL, ?6, ?7, NULL, NULL, 0, 0)
+                     ON CONFLICT(id) DO UPDATE SET isChild=1, parent_id=excluded.parent_id, amount=excluded.amount, notes=excluded.notes, category=excluded.category, tombstone=0",
+                    rusqlite::params![
+                        child.id,
+                        child.parent_id,
+                        child.account_id,
+                        date_int,
+                        child.amount.as_cents(),
+                        child.notes,
+                        child.category_id,
+                    ],
+                )
+                .map_err(actual_storage::StorageError::from)?;
+
+            let is_income = child
+                .category_id
+                .as_ref()
+                .and_then(|id| self.categories.get(id))
+                .map(|c| c.is_income)
+                .unwrap_or(false);
+            let _ = self.budget.add_transaction(&child, is_income);
+
             self.transactions.insert(child_id.clone(), child);
             child_ids.push(child_id);
         }
@@ -898,6 +1043,22 @@ impl BudgetService {
         let snap = parent.clone();
         parent.is_parent = false;
 
+        self.store
+            .conn()
+            .execute(
+                "UPDATE transactions SET isParent = 0 WHERE id = ?1",
+                rusqlite::params![cmd.parent_transaction_id],
+            )
+            .map_err(actual_storage::StorageError::from)?;
+
+        self.store
+            .conn()
+            .execute(
+                "UPDATE transactions SET tombstone = 1 WHERE parent_id = ?1",
+                rusqlite::params![cmd.parent_transaction_id],
+            )
+            .map_err(actual_storage::StorageError::from)?;
+
         // Tombstone all child splits.
         let child_ids: Vec<String> = self
             .transactions
@@ -907,9 +1068,25 @@ impl BudgetService {
             .collect();
         for cid in &child_ids {
             if let Some(child) = self.transactions.get_mut(cid) {
+                let is_income = child
+                    .category_id
+                    .as_ref()
+                    .and_then(|id| self.categories.get(id))
+                    .map(|c| c.is_income)
+                    .unwrap_or(false);
+                let _ = self.budget.remove_transaction(child, is_income);
                 child.tombstone = true;
             }
         }
+
+        let parent_is_income = snap
+            .category_id
+            .as_ref()
+            .and_then(|id| self.categories.get(id))
+            .map(|c| c.is_income)
+            .unwrap_or(false);
+        let _ = self.budget.add_transaction(&snap, parent_is_income);
+
         // Undo of unsplit = re-split using the previous parent snapshot.
         self.undo.push(UndoEntry::TransactionSplit {
             previous_parent: snap,
@@ -1201,6 +1378,10 @@ impl BudgetService {
                     .get_mut(&account_id)
                     .ok_or_else(|| ApiError::AccountNotFound(account_id.clone()))?;
                 account.tombstone = true;
+                let _ = self.store.conn().execute(
+                    "UPDATE accounts SET tombstone = 1 WHERE id = ?1",
+                    rusqlite::params![account_id],
+                );
                 Ok(UndoEntry::AccountCreated { account_id })
             }
             UndoEntry::AccountRenamed {
@@ -1212,7 +1393,11 @@ impl BudgetService {
                     .get_mut(&account_id)
                     .ok_or_else(|| ApiError::AccountNotFound(account_id.clone()))?;
                 let current_name = account.name.clone();
-                account.name = previous_name;
+                account.name = previous_name.clone();
+                let _ = self.store.conn().execute(
+                    "UPDATE accounts SET name = ?1 WHERE id = ?2",
+                    rusqlite::params![previous_name, account_id],
+                );
                 Ok(UndoEntry::AccountRenamed {
                     account_id,
                     previous_name: current_name,
@@ -1224,6 +1409,10 @@ impl BudgetService {
                     .get_mut(&account_id)
                     .ok_or_else(|| ApiError::AccountNotFound(account_id.clone()))?;
                 account.closed = false;
+                let _ = self.store.conn().execute(
+                    "UPDATE accounts SET closed = 0 WHERE id = ?1",
+                    rusqlite::params![account_id],
+                );
                 Ok(UndoEntry::AccountReopened { account_id })
             }
             UndoEntry::AccountReopened { account_id } => {
@@ -1232,12 +1421,20 @@ impl BudgetService {
                     .get_mut(&account_id)
                     .ok_or_else(|| ApiError::AccountNotFound(account_id.clone()))?;
                 account.closed = true;
+                let _ = self.store.conn().execute(
+                    "UPDATE accounts SET closed = 1 WHERE id = ?1",
+                    rusqlite::params![account_id],
+                );
                 Ok(UndoEntry::AccountClosed { account_id })
             }
             UndoEntry::PayeeCreated { payee_id } => {
                 if let Some(p) = self.payees.get_mut(&payee_id) {
                     p.tombstone = true;
                 }
+                let _ = self.store.conn().execute(
+                    "UPDATE payees SET tombstone = 1 WHERE id = ?1",
+                    rusqlite::params![payee_id],
+                );
                 Ok(UndoEntry::PayeeCreated { payee_id })
             }
             UndoEntry::PayeeRenamed {
@@ -1249,7 +1446,11 @@ impl BudgetService {
                     .get_mut(&payee_id)
                     .ok_or_else(|| ApiError::PayeeNotFound(payee_id.clone()))?;
                 let current = payee.name.clone();
-                payee.name = previous_name;
+                payee.name = previous_name.clone();
+                let _ = self.store.conn().execute(
+                    "UPDATE payees SET name = ?1 WHERE id = ?2",
+                    rusqlite::params![previous_name, payee_id],
+                );
                 Ok(UndoEntry::PayeeRenamed {
                     payee_id,
                     previous_name: current,
@@ -1264,12 +1465,20 @@ impl BudgetService {
                     if let Some(tx) = self.transactions.get_mut(tx_id) {
                         tx.payee_id = Some(source_id.clone());
                     }
+                    let _ = self.store.conn().execute(
+                        "UPDATE transactions SET description = ?1 WHERE id = ?2",
+                        rusqlite::params![source_id, tx_id],
+                    );
                 }
                 self.payees
                     .insert(source_id.clone(), restored_payee.clone());
                 if let Some(p) = self.payees.get_mut(&source_id) {
                     p.tombstone = false;
                 }
+                let _ = self.store.conn().execute(
+                    "UPDATE payees SET tombstone = 0 WHERE id = ?1",
+                    rusqlite::params![source_id],
+                );
                 Ok(UndoEntry::PayeesMerged {
                     restored_payee,
                     affected_transaction_ids,
@@ -1279,12 +1488,20 @@ impl BudgetService {
                 if let Some(g) = self.category_groups.get_mut(&group_id) {
                     g.tombstone = true;
                 }
+                let _ = self.store.conn().execute(
+                    "UPDATE category_groups SET tombstone = 1 WHERE id = ?1",
+                    rusqlite::params![group_id],
+                );
                 Ok(UndoEntry::CategoryGroupCreated { group_id })
             }
             UndoEntry::CategoryCreated { category_id } => {
                 if let Some(c) = self.categories.get_mut(&category_id) {
                     c.tombstone = true;
                 }
+                let _ = self.store.conn().execute(
+                    "UPDATE categories SET tombstone = 1 WHERE id = ?1",
+                    rusqlite::params![category_id],
+                );
                 Ok(UndoEntry::CategoryCreated { category_id })
             }
             UndoEntry::CategoryRenamed {
@@ -1296,7 +1513,11 @@ impl BudgetService {
                     .get_mut(&category_id)
                     .ok_or_else(|| ApiError::CategoryNotFound(category_id.clone()))?;
                 let current = cat.name.clone();
-                cat.name = previous_name;
+                cat.name = previous_name.clone();
+                let _ = self.store.conn().execute(
+                    "UPDATE categories SET name = ?1 WHERE id = ?2",
+                    rusqlite::params![previous_name, category_id],
+                );
                 Ok(UndoEntry::CategoryRenamed {
                     category_id,
                     previous_name: current,
@@ -1311,7 +1532,11 @@ impl BudgetService {
                     .get_mut(&category_id)
                     .ok_or_else(|| ApiError::CategoryNotFound(category_id.clone()))?;
                 let current_group = cat.group_id.clone();
-                cat.group_id = previous_group_id;
+                cat.group_id = previous_group_id.clone();
+                let _ = self.store.conn().execute(
+                    "UPDATE categories SET cat_group = ?1 WHERE id = ?2",
+                    rusqlite::params![previous_group_id, category_id],
+                );
                 Ok(UndoEntry::CategoryMoved {
                     category_id,
                     previous_group_id: current_group,
@@ -1327,6 +1552,10 @@ impl BudgetService {
                     .ok_or_else(|| ApiError::CategoryNotFound(category_id.clone()))?;
                 let current = cat.hidden;
                 cat.hidden = previous_hidden;
+                let _ = self.store.conn().execute(
+                    "UPDATE categories SET hidden = ?1 WHERE id = ?2",
+                    rusqlite::params![previous_hidden as i32, category_id],
+                );
                 Ok(UndoEntry::CategoryVisibilityChanged {
                     category_id,
                     previous_hidden: current,
@@ -1339,6 +1568,10 @@ impl BudgetService {
                 if let Some(c) = self.categories.get_mut(&snap.id) {
                     c.tombstone = false;
                 }
+                let _ = self.store.conn().execute(
+                    "UPDATE categories SET tombstone = 0 WHERE id = ?1",
+                    rusqlite::params![snap.id],
+                );
                 Ok(UndoEntry::CategoryDeleted { restored: snap })
             }
             UndoEntry::BudgetSet {
@@ -1349,6 +1582,15 @@ impl BudgetService {
                 let current = self.budget.get_category_budget(&month, &category_id);
                 self.budget
                     .set_budget(&month, &category_id, previous_amount);
+                let _ = self.store.conn().execute(
+                    "INSERT INTO zero_budgets (id, category, amount) VALUES (?1, ?2, ?3)
+                     ON CONFLICT(id) DO UPDATE SET amount=excluded.amount",
+                    rusqlite::params![
+                        format!("{month}_{category_id}"),
+                        category_id,
+                        previous_amount.as_cents(),
+                    ],
+                );
                 Ok(UndoEntry::BudgetSet {
                     month,
                     category_id,
@@ -1363,6 +1605,15 @@ impl BudgetService {
                 let current = self.budget.get_category_carryover(&month, &category_id);
                 self.budget
                     .set_carryover(&month, &category_id, previous_carry);
+                let _ = self.store.conn().execute(
+                    "INSERT INTO zero_budgets (id, category, carryover) VALUES (?1, ?2, ?3)
+                     ON CONFLICT(id) DO UPDATE SET carryover=excluded.carryover",
+                    rusqlite::params![
+                        format!("{month}_{category_id}"),
+                        category_id,
+                        previous_carry as i32,
+                    ],
+                );
                 Ok(UndoEntry::CarryoverSet {
                     month,
                     category_id,
@@ -1371,8 +1622,19 @@ impl BudgetService {
             }
             UndoEntry::TransactionAdded { transaction_id } => {
                 if let Some(tx) = self.transactions.get_mut(&transaction_id) {
+                    let is_income = tx
+                        .category_id
+                        .as_ref()
+                        .and_then(|id| self.categories.get(id))
+                        .map(|c| c.is_income)
+                        .unwrap_or(false);
+                    let _ = self.budget.remove_transaction(tx, is_income);
                     tx.tombstone = true;
                 }
+                let _ = self.store.conn().execute(
+                    "UPDATE transactions SET tombstone = 1 WHERE id = ?1",
+                    rusqlite::params![transaction_id],
+                );
                 Ok(UndoEntry::TransactionAdded { transaction_id })
             }
             UndoEntry::TransactionUpdated { previous } => {
@@ -1381,11 +1643,60 @@ impl BudgetService {
                     .get(&previous.id)
                     .ok_or_else(|| ApiError::TransactionNotFound(previous.id.clone()))?
                     .clone();
+
+                let is_income = current
+                    .category_id
+                    .as_ref()
+                    .and_then(|id| self.categories.get(id))
+                    .map(|c| c.is_income)
+                    .unwrap_or(false);
+                let _ = self.budget.remove_transaction(&current, is_income);
+
+                let prev_is_income = previous
+                    .category_id
+                    .as_ref()
+                    .and_then(|id| self.categories.get(id))
+                    .map(|c| c.is_income)
+                    .unwrap_or(false);
+                let _ = self.budget.add_transaction(&previous, prev_is_income);
+
+                let date_int: i32 = previous
+                    .date
+                    .format("%Y%m%d")
+                    .to_string()
+                    .parse()
+                    .unwrap_or(0);
+                let _ = self.store.conn().execute(
+                    "UPDATE transactions SET acct = ?1, date = ?2, amount = ?3, description = ?4, notes = ?5, category = ?6, cleared = ?7, tombstone = ?8 WHERE id = ?9",
+                    rusqlite::params![
+                        previous.account_id,
+                        date_int,
+                        previous.amount.as_cents(),
+                        previous.payee_id,
+                        previous.notes,
+                        previous.category_id,
+                        previous.cleared as i32,
+                        previous.tombstone as i32,
+                        previous.id,
+                    ],
+                );
+
                 self.transactions.insert(previous.id.clone(), previous);
                 Ok(UndoEntry::TransactionUpdated { previous: current })
             }
             UndoEntry::TransactionDeleted { restored } => {
                 let id = restored.id.clone();
+                let is_income = restored
+                    .category_id
+                    .as_ref()
+                    .and_then(|id| self.categories.get(id))
+                    .map(|c| c.is_income)
+                    .unwrap_or(false);
+                let _ = self.budget.add_transaction(&restored, is_income);
+                let _ = self.store.conn().execute(
+                    "UPDATE transactions SET tombstone = 0 WHERE id = ?1",
+                    rusqlite::params![id],
+                );
                 self.transactions.insert(id.clone(), restored.clone());
                 if let Some(tx) = self.transactions.get_mut(&id) {
                     tx.tombstone = false;
@@ -1399,9 +1710,33 @@ impl BudgetService {
                 // Tombstone children and restore parent.
                 for cid in &child_ids {
                     if let Some(tx) = self.transactions.get_mut(cid) {
+                        let is_income = tx
+                            .category_id
+                            .as_ref()
+                            .and_then(|id| self.categories.get(id))
+                            .map(|c| c.is_income)
+                            .unwrap_or(false);
+                        let _ = self.budget.remove_transaction(tx, is_income);
                         tx.tombstone = true;
                     }
+                    let _ = self.store.conn().execute(
+                        "UPDATE transactions SET tombstone = 1 WHERE id = ?1",
+                        rusqlite::params![cid],
+                    );
                 }
+                let parent_is_income = previous_parent
+                    .category_id
+                    .as_ref()
+                    .and_then(|id| self.categories.get(id))
+                    .map(|c| c.is_income)
+                    .unwrap_or(false);
+                let _ = self
+                    .budget
+                    .add_transaction(&previous_parent, parent_is_income);
+                let _ = self.store.conn().execute(
+                    "UPDATE transactions SET isParent = 0 WHERE id = ?1",
+                    rusqlite::params![previous_parent.id],
+                );
                 let id = previous_parent.id.clone();
                 self.transactions.insert(id, previous_parent.clone());
                 Ok(UndoEntry::TransactionSplit {

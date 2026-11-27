@@ -476,6 +476,10 @@ async fn test_server_path_traversal_protection() {
         bad_download.is_err(),
         "path traversal download must be rejected"
     );
+
+    let bad_key_req = ureq::post(&format!("{base_url}/user/get-key"))
+        .send_json(serde_json::json!({ "fileId": "../../etc/shadow" }));
+    assert!(bad_key_req.is_err(), "bad key fileId must be rejected");
 }
 
 #[tokio::test(flavor = "multi_thread")]

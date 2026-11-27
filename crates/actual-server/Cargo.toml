@@ -25,6 +25,7 @@ uuid = { version = "1.6", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
 prost = "0.14"
 thiserror = "2.0"
+subtle = "2.6"
 
 [dev-dependencies]
 actual-storage = { path = "../actual-storage", version = "0.1.0" }

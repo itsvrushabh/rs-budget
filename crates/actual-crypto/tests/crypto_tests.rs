@@ -171,3 +171,29 @@ fn test_encrypted_data_json_serde() {
         serde_json::from_str(&json_str).expect("Deserialize from JSON");
     assert_eq!(encrypted, deserialized);
 }
+
+#[test]
+fn test_password_hash_and_verify() {
+    let password = "super-secret-password-xyz";
+    let (hash, salt) = actual_crypto::hash_password(password);
+
+    assert!(!hash.is_empty());
+    assert!(!salt.is_empty());
+
+    // Correct password verifies successfully
+    assert!(actual_crypto::verify_password(password, &salt, &hash));
+
+    // Incorrect password fails verification
+    assert!(!actual_crypto::verify_password(
+        "wrong-password",
+        &salt,
+        &hash
+    ));
+
+    // Wrong salt fails verification
+    assert!(!actual_crypto::verify_password(
+        password,
+        "different-salt-12345",
+        &hash
+    ));
+}
