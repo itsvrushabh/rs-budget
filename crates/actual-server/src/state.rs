@@ -56,7 +56,9 @@ impl ServerState {
             Some(ServerPassword { hash, salt })
         } else if let Some(init_pass) = initial_password {
             let (hash, salt) = actual_crypto::hash_password(&init_pass);
-            let now = chrono::Utc::now().to_rfc3339();
+            let now = time::OffsetDateTime::now_utc()
+                .format(&time::format_description::well_known::Rfc3339)
+                .unwrap_or_default();
             conn.execute(
                 "INSERT INTO users (id, password_hash, salt, created_at) VALUES ('default', ?1, ?2, ?3)
                  ON CONFLICT(id) DO UPDATE SET password_hash = ?1, salt = ?2",

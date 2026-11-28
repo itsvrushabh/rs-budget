@@ -544,7 +544,7 @@ impl EnvelopeBudget {
         tx: &Transaction,
         is_income: bool,
     ) -> Result<(), DomainError> {
-        let month = tx.date.format("%Y-%m").to_string();
+        let month = format!("{:04}-{:02}", tx.date.year(), u8::from(tx.date.month()));
 
         // If month not initialized, auto-initialize with current known categories and groups
         if !self.initialized_months.contains(&month) {
@@ -586,7 +586,7 @@ impl EnvelopeBudget {
         tx: &Transaction,
         is_income: bool,
     ) -> Result<(), DomainError> {
-        let month = tx.date.format("%Y-%m").to_string();
+        let month = format!("{:04}-{:02}", tx.date.year(), u8::from(tx.date.month()));
         if !self.initialized_months.contains(&month) {
             return Ok(());
         }

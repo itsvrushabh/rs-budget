@@ -1,6 +1,6 @@
 //! Generator for upcoming scheduled transactions.
 
-use chrono::NaiveDate;
+use time::Date as NaiveDate;
 
 use crate::schedules::schedule::Schedule;
 use crate::transaction::Transaction;

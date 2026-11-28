@@ -1,9 +1,9 @@
 //! Hybrid Logical Clock (HLC) Timestamp implementation matching upstream Actual Budget.
 
-use chrono::{DateTime, TimeZone, Utc};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::str::FromStr;
+use time::{format_description::well_known::Rfc3339, OffsetDateTime, UtcOffset};
 
 use crate::error::TimestampError;
 use crate::hash::murmur3_32;
@@ -107,12 +107,12 @@ impl Timestamp {
         }
 
         let iso_date_str = format!("{}-{}-{}", parts[0], parts[1], parts[2]);
-        let dt = match DateTime::parse_from_rfc3339(&iso_date_str) {
-            Ok(d) => d.with_timezone(&Utc),
+        let dt = match OffsetDateTime::parse(&iso_date_str, &Rfc3339) {
+            Ok(d) => d.to_offset(UtcOffset::UTC),
             Err(_) => return Err(TimestampError::Invalid(s.to_string())),
         };
 
-        let millis = dt.timestamp_millis();
+        let millis = (dt.unix_timestamp_nanos() / 1_000_000) as i64;
         if millis < 0 || millis as u64 > MAX_MILLIS {
             return Err(TimestampError::Invalid(s.to_string()));
         }
@@ -137,12 +137,19 @@ impl Timestamp {
 
 impl fmt::Display for Timestamp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let dt = Utc
-            .timestamp_millis_opt(self.millis as i64)
-            .single()
-            .unwrap_or_else(Utc::now);
+        let dt = OffsetDateTime::from_unix_timestamp_nanos(i128::from(self.millis) * 1_000_000)
+            .unwrap_or_else(|_| OffsetDateTime::now_utc());
 
-        let iso = dt.format("%Y-%m-%dT%H:%M:%S%.3fZ");
+        let iso = format!(
+            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:03}Z",
+            dt.year(),
+            u8::from(dt.month()),
+            dt.day(),
+            dt.hour(),
+            dt.minute(),
+            dt.second(),
+            dt.millisecond()
+        );
         write!(f, "{}-{:04X}-{:0>16}", iso, self.counter, self.node)
     }
 }

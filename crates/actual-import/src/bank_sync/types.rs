@@ -2,8 +2,8 @@
 
 use crate::models::ImportedTransaction;
 use actual_core::Cents;
-use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
+use time::{Date as NaiveDate, OffsetDateTime};
 
 /// Supported automated bank synchronization providers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -61,7 +61,7 @@ pub struct LinkedAccount {
     /// Optional custom display name of the external account.
     pub external_name: Option<String>,
     /// Timestamp of the last successful synchronization.
-    pub last_sync: Option<DateTime<Utc>>,
+    pub last_sync: Option<OffsetDateTime>,
     /// Currency code reported by external provider.
     pub currency: Option<String>,
 }

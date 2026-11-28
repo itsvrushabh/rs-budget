@@ -1,4 +1,12 @@
-use chrono::NaiveDate;
+use time::Date as NaiveDate;
+fn ymd(y: i32, m: u32, d: u32) -> Option<NaiveDate> {
+    NaiveDate::from_calendar_date(
+        y,
+        time::Month::try_from(u8::try_from(m).ok()?).ok()?,
+        u8::try_from(d).ok()?,
+    )
+    .ok()
+}
 use criterion::{criterion_group, criterion_main, Criterion};
 use std::hint::black_box;
 use std::slice::from_ref;
@@ -77,7 +85,7 @@ fn bench_rules_engine_matching(c: &mut Criterion) {
     let mut tx = Transaction::new(
         "tx_1",
         "acc_checking",
-        NaiveDate::from_ymd_opt(2026, 11, 8).unwrap(),
+        ymd(2026, 11, 8).unwrap(),
         Cents::from_cents(-3500),
     );
     tx.imported_payee = Some("Store_15 Market".into());

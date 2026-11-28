@@ -3,8 +3,8 @@
 use actual_api::commands::{AddTransaction, DeleteTransaction};
 use actual_api::BudgetService;
 use actual_core::Cents;
-use chrono::{Local, NaiveDate};
 use serde::Serialize;
+use time::{Date as NaiveDate, OffsetDateTime};
 
 use crate::cli::TransactionSubcommand;
 use crate::output::{format_dollars, print_json};
@@ -41,7 +41,9 @@ pub fn handle(
             };
 
             if let Some(ref m) = month {
-                txs.retain(|t| t.date.format("%Y-%m").to_string() == *m);
+                txs.retain(|t| {
+                    format!("{:04}-{:02}", t.date.year(), u8::from(t.date.month())) == *m
+                });
             }
 
             let view: Vec<TransactionView> = txs
@@ -105,10 +107,15 @@ pub fn handle(
             cleared,
         } => {
             let tx_date = if let Some(d) = date {
-                NaiveDate::parse_from_str(&d, "%Y-%m-%d")
-                    .map_err(|e| format!("Invalid date: {e}"))?
+                NaiveDate::parse(
+                    &d,
+                    time::macros::format_description!("[year]-[month]-[day]"),
+                )
+                .map_err(|e| format!("Invalid date: {e}"))?
             } else {
-                Local::now().date_naive()
+                OffsetDateTime::now_local()
+                    .unwrap_or_else(|_| OffsetDateTime::now_utc())
+                    .date()
             };
 
             let cents = Cents::from_cents((amount * 100.0).round() as i64);

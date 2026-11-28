@@ -1,8 +1,8 @@
 //! Rule condition types and evaluation logic.
 
-use chrono::NaiveDate;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use time::Date as NaiveDate;
 
 use crate::cents::Cents;
 use crate::transaction::Transaction;

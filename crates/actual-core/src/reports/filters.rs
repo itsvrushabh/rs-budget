@@ -1,6 +1,6 @@
 //! Report filter for arbitrary queries across date ranges, accounts, categories, and payees.
 
-use chrono::NaiveDate;
+use time::Date as NaiveDate;
 
 use crate::Transaction;
 

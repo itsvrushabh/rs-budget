@@ -9,7 +9,6 @@ use actual_gui::evaluation::{FrameworkComparison, FrameworkEvaluation};
 use actual_gui::navigation::{ImeBuffer, KeyAction, KeyboardNavigator};
 use actual_gui::table::{CellValue, ColumnAlign, EditableTable, TableCell, TableColumn};
 use actual_gui::views::{BudgetView, TransactionView};
-use chrono::NaiveDate;
 
 #[test]
 fn test_cell_value_formatting_and_parsing() {
@@ -326,7 +325,7 @@ fn test_gui_bridge_transaction_view_and_filtering() {
         .add_transaction(AddTransaction {
             id: String::new(),
             account_id: acc_id.clone(),
-            date: NaiveDate::from_ymd_opt(2024, 5, 10).unwrap(),
+            date: time::macros::date!(2024 - 05 - 10),
             amount: Cents::from_cents(-4520),
             payee_id: None,
             category_id: None,
@@ -339,7 +338,7 @@ fn test_gui_bridge_transaction_view_and_filtering() {
         .add_transaction(AddTransaction {
             id: String::new(),
             account_id: acc_id.clone(),
-            date: NaiveDate::from_ymd_opt(2024, 5, 12).unwrap(),
+            date: time::macros::date!(2024 - 05 - 12),
             amount: Cents::from_cents(-1500),
             payee_id: None,
             category_id: None,

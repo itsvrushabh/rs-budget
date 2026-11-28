@@ -7,10 +7,10 @@ use axum::http::request::Parts;
 use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use chrono::Utc;
 use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use time::OffsetDateTime as Utc;
 use uuid::Uuid;
 
 /// Request payload for bootstrap and login endpoints.
@@ -53,7 +53,7 @@ impl FromRequestParts<ServerState> for AuthSession {
                 .db
                 .lock()
                 .map_err(|e| ServerError::Internal(e.to_string()))?;
-            let now = Utc::now().timestamp();
+            let now = Utc::now_utc().unix_timestamp();
             let count: i64 = conn.query_row(
                 "SELECT COUNT(1) FROM sessions WHERE token = ?1 AND expires_at > ?2",
                 params![token, now],
@@ -156,7 +156,9 @@ pub async fn bootstrap_handler(
             .db
             .lock()
             .map_err(|e| ServerError::Internal(e.to_string()))?;
-        let now = Utc::now().to_rfc3339();
+        let now = Utc::now_utc()
+            .format(&time::format_description::well_known::Rfc3339)
+            .unwrap_or_default();
         conn.execute(
             "INSERT INTO users (id, password_hash, salt, created_at) VALUES ('default', ?1, ?2, ?3)
              ON CONFLICT(id) DO UPDATE SET password_hash = ?1, salt = ?2",
@@ -245,9 +247,11 @@ pub async fn validate_handler(_session: AuthSession) -> Result<Response, ServerE
 /// Helper to create and persist a new session token valid for 30 days.
 pub fn create_session(state: &ServerState) -> Result<String, ServerError> {
     let token = Uuid::new_v4().to_string();
-    let now = Utc::now();
-    let created_at = now.to_rfc3339();
-    let expires_at = now.timestamp() + (30 * 24 * 3600); // 30 days
+    let now = Utc::now_utc();
+    let created_at = now
+        .format(&time::format_description::well_known::Rfc3339)
+        .unwrap_or_default();
+    let expires_at = now.unix_timestamp() + (30 * 24 * 3600); // 30 days
 
     let conn = state
         .db

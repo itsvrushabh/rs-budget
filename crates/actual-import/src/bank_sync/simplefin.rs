@@ -10,8 +10,8 @@ use crate::models::ImportedTransaction;
 use actual_core::Cents;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
-use chrono::DateTime;
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
 /// Raw account structure returned by SimpleFIN Bridge API.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -239,9 +239,9 @@ impl SimpleFinClient {
                     raw_tx.transacted_at.unwrap_or_default()
                 };
 
-                let date = DateTime::from_timestamp(timestamp, 0)
-                    .map(|dt| dt.date_naive())
-                    .unwrap_or_default();
+                let date = OffsetDateTime::from_unix_timestamp(timestamp)
+                    .map(|dt| dt.date())
+                    .unwrap_or(time::macros::date!(1970 - 01 - 01));
 
                 let payee_candidate = raw_tx.payee.clone().or_else(|| raw_tx.description.clone());
                 let mut imported = ImportedTransaction::new(date, amount);

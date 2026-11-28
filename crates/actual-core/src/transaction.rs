@@ -1,7 +1,7 @@
 //! Transaction and Split domain entities.
 
-use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
+use time::Date as NaiveDate;
 
 use crate::cents::Cents;
 use crate::error::DomainError;

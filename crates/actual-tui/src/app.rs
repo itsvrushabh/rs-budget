@@ -5,7 +5,7 @@ use actual_api::commands::{
 };
 use actual_api::BudgetService;
 use actual_core::{Cents, Transaction};
-use chrono::{Datelike, Local, NaiveDate};
+use time::{Date as NaiveDate, OffsetDateTime};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActiveView {
@@ -79,8 +79,10 @@ pub struct App {
 impl App {
     #[must_use]
     pub fn new(svc: BudgetService) -> Self {
-        let now = Local::now().date_naive();
-        let current_month = NaiveDate::from_ymd_opt(now.year(), now.month(), 1).unwrap();
+        let now = OffsetDateTime::now_local()
+            .unwrap_or_else(|_| OffsetDateTime::now_utc())
+            .date();
+        let current_month = NaiveDate::from_calendar_date(now.year(), now.month(), 1).unwrap();
 
         let mut app = Self {
             svc,
@@ -114,16 +116,20 @@ impl App {
     }
 
     pub fn current_month_str(&self) -> String {
-        self.current_month.format("%Y-%m").to_string()
+        format!(
+            "{:04}-{:02}",
+            self.current_month.year(),
+            u8::from(self.current_month.month())
+        )
     }
 
     pub fn prev_month(&mut self) {
         let y = self.current_month.year();
         let m = self.current_month.month();
-        self.current_month = if m == 1 {
-            NaiveDate::from_ymd_opt(y - 1, 12, 1).unwrap()
+        self.current_month = if m == time::Month::January {
+            NaiveDate::from_calendar_date(y - 1, time::Month::December, 1).unwrap()
         } else {
-            NaiveDate::from_ymd_opt(y, m - 1, 1).unwrap()
+            NaiveDate::from_calendar_date(y, m.previous(), 1).unwrap()
         };
         self.budget_cursor = 0;
     }
@@ -131,10 +137,10 @@ impl App {
     pub fn next_month(&mut self) {
         let y = self.current_month.year();
         let m = self.current_month.month();
-        self.current_month = if m == 12 {
-            NaiveDate::from_ymd_opt(y + 1, 1, 1).unwrap()
+        self.current_month = if m == time::Month::December {
+            NaiveDate::from_calendar_date(y + 1, time::Month::January, 1).unwrap()
         } else {
-            NaiveDate::from_ymd_opt(y, m + 1, 1).unwrap()
+            NaiveDate::from_calendar_date(y, m.next(), 1).unwrap()
         };
         self.budget_cursor = 0;
     }
@@ -315,7 +321,9 @@ impl App {
         let cmd = AddTransaction {
             id: String::new(),
             account_id,
-            date: Local::now().date_naive(),
+            date: OffsetDateTime::now_local()
+                .unwrap_or_else(|_| OffsetDateTime::now_utc())
+                .date(),
             amount: cents,
             payee_id: payee,
             category_id: cat_id,

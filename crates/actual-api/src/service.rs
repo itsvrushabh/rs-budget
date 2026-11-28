@@ -186,8 +186,12 @@ impl BudgetService {
                 let year = date_int / 10000;
                 let month = (date_int % 10000) / 100;
                 let day = date_int % 100;
-                let date = chrono::NaiveDate::from_ymd_opt(year, month as u32, day as u32)
-                    .unwrap_or_else(|| chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap());
+                let date = time::Date::from_calendar_date(
+                    year,
+                    time::Month::try_from(month as u8).unwrap_or(time::Month::January),
+                    day as u8,
+                )
+                .unwrap_or(time::macros::date!(2024 - 01 - 01));
 
                 let mut tx = Transaction::new(
                     &id,
@@ -215,11 +219,17 @@ impl BudgetService {
 
         // Load zero_budgets allocations and initialize envelope reactive calculations
         let mut months_set = std::collections::BTreeSet::new();
-        let now_month = chrono::Local::now().format("%Y-%m").to_string();
+        let now =
+            time::OffsetDateTime::now_local().unwrap_or_else(|_| time::OffsetDateTime::now_utc());
+        let now_month = format!("{:04}-{:02}", now.year(), u8::from(now.month()));
         months_set.insert(now_month);
 
         for tx in self.transactions.values() {
-            months_set.insert(tx.date.format("%Y-%m").to_string());
+            months_set.insert(format!(
+                "{:04}-{:02}",
+                tx.date.year(),
+                u8::from(tx.date.month())
+            ));
         }
 
         let mut loaded_budgets = Vec::new();
@@ -768,7 +778,7 @@ impl BudgetService {
         tx.cleared = cmd.cleared;
 
         // Update envelope budget spent amounts.
-        let month = cmd.date.format("%Y-%m").to_string();
+        let month = format!("{:04}-{:02}", cmd.date.year(), u8::from(cmd.date.month()));
         self.ensure_month_initialized(&month);
         let is_income = cmd
             .category_id
@@ -778,7 +788,14 @@ impl BudgetService {
             .unwrap_or(false);
         let _ = self.budget.add_transaction(&tx, is_income);
 
-        let date_int: i32 = tx.date.format("%Y%m%d").to_string().parse().unwrap_or(0);
+        let date_int: i32 = format!(
+            "{:04}{:02}{:02}",
+            tx.date.year(),
+            u8::from(tx.date.month()),
+            tx.date.day()
+        )
+        .parse()
+        .unwrap_or(0);
         self.store.conn().execute(
             "INSERT INTO transactions (id, acct, date, amount, description, notes, category, financial_id, imported_description, cleared, tombstone)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 0)
@@ -861,12 +878,14 @@ impl BudgetService {
         }
 
         // Update SQLite
-        let date_int: i32 = updated_tx
-            .date
-            .format("%Y%m%d")
-            .to_string()
-            .parse()
-            .unwrap_or(0);
+        let date_int: i32 = format!(
+            "{:04}{:02}{:02}",
+            updated_tx.date.year(),
+            u8::from(updated_tx.date.month()),
+            updated_tx.date.day()
+        )
+        .parse()
+        .unwrap_or(0);
         self.store
             .conn()
             .execute(
@@ -979,11 +998,14 @@ impl BudgetService {
         let parent_id = cmd.parent_transaction_id.clone();
         let parent_account_id = self.transactions[&parent_id].account_id.clone();
         let parent_date = self.transactions[&parent_id].date;
-        let date_int: i32 = parent_date
-            .format("%Y%m%d")
-            .to_string()
-            .parse()
-            .unwrap_or(0);
+        let date_int: i32 = format!(
+            "{:04}{:02}{:02}",
+            parent_date.year(),
+            u8::from(parent_date.month()),
+            parent_date.day()
+        )
+        .parse()
+        .unwrap_or(0);
 
         let mut child_ids = Vec::new();
         for (cat_id, amount, notes) in &cmd.splits {
@@ -1660,12 +1682,14 @@ impl BudgetService {
                     .unwrap_or(false);
                 let _ = self.budget.add_transaction(&previous, prev_is_income);
 
-                let date_int: i32 = previous
-                    .date
-                    .format("%Y%m%d")
-                    .to_string()
-                    .parse()
-                    .unwrap_or(0);
+                let date_int: i32 = format!(
+                    "{:04}{:02}{:02}",
+                    previous.date.year(),
+                    u8::from(previous.date.month()),
+                    previous.date.day()
+                )
+                .parse()
+                .unwrap_or(0);
                 let _ = self.store.conn().execute(
                     "UPDATE transactions SET acct = ?1, date = ?2, amount = ?3, description = ?4, notes = ?5, category = ?6, cleared = ?7, tombstone = ?8 WHERE id = ?9",
                     rusqlite::params![

@@ -8,7 +8,10 @@ use actual_core::validation::{
     validate_account, validate_category, validate_category_group, validate_payee, validate_split,
     validate_transfer_categorization, validate_transfer_pair,
 };
-use chrono::NaiveDate;
+use time::Date as NaiveDate;
+fn ymd(y: i32, m: u8, d: u8) -> Option<NaiveDate> {
+    NaiveDate::from_calendar_date(y, time::Month::try_from(m).ok()?, d).ok()
+}
 
 #[test]
 fn test_cents_arithmetic_and_signs() {
@@ -182,7 +185,7 @@ fn test_payee_standard_and_transfer() {
 
 #[test]
 fn test_split_transaction_balancing_and_invariants() {
-    let date = NaiveDate::from_ymd_opt(2026, 11, 2).unwrap();
+    let date = ymd(2026, 11, 2).unwrap();
     let mut parent = Transaction::new("tx-parent", "acct-1", date, Cents::from_cents(-10000)); // -$100.00
 
     let split1 = Transaction::new("tx-split-1", "acct-1", date, Cents::from_cents(-6000)); // -$60.00
@@ -206,7 +209,7 @@ fn test_split_transaction_balancing_and_invariants() {
 
 #[test]
 fn test_transfer_pair_balancing_and_invariants() {
-    let date = NaiveDate::from_ymd_opt(2026, 11, 2).unwrap();
+    let date = ymd(2026, 11, 2).unwrap();
 
     let mut tx1 = Transaction::new("tx-1", "acct-checking", date, Cents::from_cents(-5000));
     let mut tx2 = Transaction::new("tx-2", "acct-savings", date, Cents::from_cents(5000));
@@ -236,7 +239,7 @@ fn test_transfer_pair_balancing_and_invariants() {
 
 #[test]
 fn test_transfer_categorization_rules() {
-    let date = NaiveDate::from_ymd_opt(2026, 11, 2).unwrap();
+    let date = ymd(2026, 11, 2).unwrap();
     let on_budget_1 = Account::new("acct-1", "Checking");
     let on_budget_2 = Account::new("acct-2", "Savings");
     let tracking = Account::new_offbudget("acct-3", "Investment");
@@ -278,7 +281,7 @@ fn test_json_serde_roundtrips() {
     let deserialized: Account = serde_json::from_str(&json).unwrap();
     assert_eq!(acct, deserialized);
 
-    let date = NaiveDate::from_ymd_opt(2026, 11, 2).unwrap();
+    let date = ymd(2026, 11, 2).unwrap();
     let mut tx = Transaction::new("tx-1", "acct-1", date, Cents::from_cents(4250));
     tx.payee_id = Some("payee-1".to_string());
     tx.category_id = Some("cat-1".to_string());
