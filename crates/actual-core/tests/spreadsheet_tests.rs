@@ -1,6 +1,9 @@
 use std::slice::from_ref;
 
-use chrono::NaiveDate;
+use time::Date as NaiveDate;
+fn ymd(y: i32, m: u8, d: u8) -> Option<NaiveDate> {
+    NaiveDate::from_calendar_date(y, time::Month::try_from(m).ok()?, d).ok()
+}
 
 use actual_core::budget::{next_month, parse_year_month, prev_month, EnvelopeBudget};
 use actual_core::category::{Category, CategoryGroup};
@@ -372,7 +375,7 @@ fn test_transaction_integration_and_splits() {
     let mut tx_rent = Transaction::new(
         "tx_1",
         "acct_checking",
-        NaiveDate::from_ymd_opt(2026, 11, 5).unwrap(),
+        ymd(2026, 11, 5).unwrap(),
         dollars(-1500),
     );
     tx_rent.category_id = Some("cat_rent".to_string());
@@ -391,14 +394,14 @@ fn test_transaction_integration_and_splits() {
     let mut parent_tx = Transaction::new(
         "tx_parent",
         "acct_checking",
-        NaiveDate::from_ymd_opt(2026, 11, 10).unwrap(),
+        ymd(2026, 11, 10).unwrap(),
         dollars(-250),
     );
 
     let mut sub_1 = Transaction::new(
         "sub_1",
         "acct_checking",
-        NaiveDate::from_ymd_opt(2026, 11, 10).unwrap(),
+        ymd(2026, 11, 10).unwrap(),
         dollars(-200),
     );
     sub_1.category_id = Some("cat_sup".to_string());
@@ -406,7 +409,7 @@ fn test_transaction_integration_and_splits() {
     let sub_2 = Transaction::new(
         "sub_2",
         "acct_checking",
-        NaiveDate::from_ymd_opt(2026, 11, 10).unwrap(),
+        ymd(2026, 11, 10).unwrap(),
         dollars(-50),
     );
 

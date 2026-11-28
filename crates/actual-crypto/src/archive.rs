@@ -10,6 +10,8 @@ use std::path::Path;
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
+pub const MAX_UNCOMPRESSED_FILE_BYTES: u64 = 512 * 1024 * 1024; // 512 MB
+
 /// Metadata accompanying a budget file matching upstream Actual Budget conventions.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -121,17 +123,31 @@ impl BudgetArchive {
         let mut metadata = None;
 
         for i in 0..archive.len() {
-            let mut file = archive.by_index(i)?;
+            let file = archive.by_index(i)?;
             let name = file.name()?.to_string();
+
+            if name.contains("..") || name.starts_with('/') || name.starts_with('\\') {
+                return Err(CryptoError::Archive(format!(
+                    "Malicious path '{name}' detected in archive"
+                )));
+            }
+
+            if file.size() > MAX_UNCOMPRESSED_FILE_BYTES {
+                return Err(CryptoError::Archive(format!(
+                    "Uncompressed file '{name}' exceeds size limit of 512MB"
+                )));
+            }
 
             if name.ends_with("metadata.json") {
                 let mut content = String::new();
-                file.read_to_string(&mut content)?;
+                file.take(MAX_UNCOMPRESSED_FILE_BYTES)
+                    .read_to_string(&mut content)?;
                 let meta: BudgetMetadata = serde_json::from_str(&content)?;
                 metadata = Some(meta);
             } else if name.ends_with("db.sqlite") || name.ends_with(".sqlite") {
                 let mut bytes = Vec::new();
-                file.read_to_end(&mut bytes)?;
+                file.take(MAX_UNCOMPRESSED_FILE_BYTES)
+                    .read_to_end(&mut bytes)?;
                 database = Some(bytes);
             }
         }

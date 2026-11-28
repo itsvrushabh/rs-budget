@@ -1,8 +1,8 @@
 //! Models representing imported transactions and splits.
 
 use actual_core::{Cents, Transaction};
-use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
+use time::Date as NaiveDate;
 use uuid::Uuid;
 
 /// An individual split line item within an imported transaction.

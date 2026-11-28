@@ -4,7 +4,15 @@ use actual_api::commands::*;
 use actual_api::service::BudgetService;
 use actual_api::ApiError;
 use actual_core::Cents;
-use chrono::{Datelike, NaiveDate};
+use time::Date as NaiveDate;
+fn ymd(y: i32, m: u32, d: u32) -> Option<NaiveDate> {
+    NaiveDate::from_calendar_date(
+        y,
+        time::Month::try_from(u8::try_from(m).ok()?).ok()?,
+        u8::try_from(d).ok()?,
+    )
+    .ok()
+}
 
 /// Helper to create cents from a dollar integer.
 fn dollars(d: i64) -> Cents {
@@ -125,7 +133,7 @@ fn test_merge_payees() {
     svc.add_transaction(AddTransaction {
         id: "tx-1".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+        date: ymd(2024, 6, 15).unwrap(),
         amount: dollars(-50),
         payee_id: Some("pay-a".into()),
         category_id: None,
@@ -305,7 +313,7 @@ fn test_add_and_read_transaction() {
         .add_transaction(AddTransaction {
             id: "tx-1".into(),
             account_id: "acc-1".into(),
-            date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+            date: ymd(2024, 6, 15).unwrap(),
             amount: dollars(-42),
             payee_id: None,
             category_id: None,
@@ -332,7 +340,7 @@ fn test_update_transaction() {
     svc.add_transaction(AddTransaction {
         id: "tx-1".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+        date: ymd(2024, 6, 15).unwrap(),
         amount: dollars(-42),
         payee_id: None,
         category_id: None,
@@ -368,7 +376,7 @@ fn test_delete_transaction() {
     svc.add_transaction(AddTransaction {
         id: "tx-1".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+        date: ymd(2024, 6, 15).unwrap(),
         amount: dollars(-42),
         payee_id: None,
         category_id: None,
@@ -391,7 +399,7 @@ fn test_transaction_requires_existing_account() {
         .add_transaction(AddTransaction {
             id: "tx-1".into(),
             account_id: "no-acct".into(),
-            date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+            date: ymd(2024, 6, 15).unwrap(),
             amount: dollars(-10),
             payee_id: None,
             category_id: None,
@@ -415,7 +423,7 @@ fn test_transactions_for_account_sorted_desc() {
         svc.add_transaction(AddTransaction {
             id: format!("tx-{day}"),
             account_id: "acc-1".into(),
-            date: NaiveDate::from_ymd_opt(2024, 6, day).unwrap(),
+            date: ymd(2024, 6, day).unwrap(),
             amount: dollars(-10),
             payee_id: None,
             category_id: None,
@@ -444,7 +452,7 @@ fn test_split_transaction() {
     svc.add_transaction(AddTransaction {
         id: "tx-parent".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+        date: ymd(2024, 6, 15).unwrap(),
         amount: dollars(-100),
         payee_id: None,
         category_id: None,
@@ -479,7 +487,7 @@ fn test_split_amount_mismatch() {
     svc.add_transaction(AddTransaction {
         id: "tx-parent".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+        date: ymd(2024, 6, 15).unwrap(),
         amount: dollars(-100),
         payee_id: None,
         category_id: None,
@@ -608,7 +616,7 @@ fn test_undo_delete_transaction() {
     svc.add_transaction(AddTransaction {
         id: "tx-1".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+        date: ymd(2024, 6, 15).unwrap(),
         amount: dollars(-42),
         payee_id: None,
         category_id: None,
@@ -639,7 +647,7 @@ fn test_undo_update_transaction() {
     svc.add_transaction(AddTransaction {
         id: "tx-1".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+        date: ymd(2024, 6, 15).unwrap(),
         amount: dollars(-42),
         payee_id: None,
         category_id: None,
@@ -724,7 +732,7 @@ fn test_undo_merge_payees() {
     svc.add_transaction(AddTransaction {
         id: "tx-1".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+        date: ymd(2024, 6, 15).unwrap(),
         amount: dollars(-50),
         payee_id: Some("pay-a".into()),
         category_id: None,
@@ -863,7 +871,7 @@ fn test_budget_service_reports() {
     svc.add_transaction(AddTransaction {
         id: "tx-inc".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 7, 1).unwrap(),
+        date: ymd(2024, 7, 1).unwrap(),
         amount: dollars(3000),
         payee_id: None,
         category_id: None,
@@ -876,7 +884,7 @@ fn test_budget_service_reports() {
     svc.add_transaction(AddTransaction {
         id: "tx-exp".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 7, 10).unwrap(),
+        date: ymd(2024, 7, 10).unwrap(),
         amount: dollars(-500),
         payee_id: None,
         category_id: Some("cat-1".into()),
@@ -949,7 +957,7 @@ fn test_budget_service_envelope_calculations() {
     svc.add_transaction(AddTransaction {
         id: "tx-groc-1".into(),
         account_id: acc_id,
-        date: NaiveDate::from_ymd_opt(2026, 11, 10).unwrap(),
+        date: ymd(2026, 11, 10).unwrap(),
         amount: dollars(-150),
         payee_id: None,
         category_id: Some(cat_id.clone()),
@@ -964,4 +972,183 @@ fn test_budget_service_envelope_calculations() {
     assert_eq!(budget.get_category_leftover(month, &cat_id), dollars(350));
     assert_eq!(budget.get_total_budgeted(month), dollars(500));
     assert_eq!(budget.get_total_spent(month), dollars(-150));
+}
+
+#[test]
+fn test_transaction_update_and_delete_dag_recalculation() {
+    let mut svc = BudgetService::open_in_memory().unwrap();
+    let acc_id = svc
+        .create_account(CreateAccount {
+            id: "acc-dag".into(),
+            name: "Checking".into(),
+            offbudget: false,
+        })
+        .unwrap();
+
+    let grp_id = svc
+        .create_category_group(CreateCategoryGroup {
+            id: "grp-dag".into(),
+            name: "Expenses".into(),
+            is_income: false,
+        })
+        .unwrap();
+
+    let cat_id = svc
+        .create_category(CreateCategory {
+            id: "cat-dag".into(),
+            name: "Dining".into(),
+            group_id: grp_id,
+            is_income: false,
+        })
+        .unwrap();
+
+    let month = "2026-11";
+    svc.set_budget(SetBudget {
+        month: month.into(),
+        category_id: cat_id.clone(),
+        amount: dollars(200),
+    })
+    .unwrap();
+
+    // 1. Add transaction -$50
+    svc.add_transaction(AddTransaction {
+        id: "tx-dag-1".into(),
+        account_id: acc_id,
+        date: ymd(2026, 11, 12).unwrap(),
+        amount: dollars(-50),
+        payee_id: None,
+        category_id: Some(cat_id.clone()),
+        notes: None,
+        cleared: true,
+    })
+    .unwrap();
+
+    assert_eq!(
+        svc.budget().get_category_spent(month, &cat_id),
+        dollars(-50)
+    );
+    assert_eq!(
+        svc.budget().get_category_leftover(month, &cat_id),
+        dollars(150)
+    );
+
+    // 2. Update transaction amount from -$50 to -$80
+    svc.update_transaction(UpdateTransaction {
+        transaction_id: "tx-dag-1".into(),
+        date: None,
+        amount: Some(dollars(-80)),
+        payee_id: None,
+        category_id: None,
+        notes: None,
+        cleared: None,
+    })
+    .unwrap();
+
+    assert_eq!(
+        svc.budget().get_category_spent(month, &cat_id),
+        dollars(-80)
+    );
+    assert_eq!(
+        svc.budget().get_category_leftover(month, &cat_id),
+        dollars(120)
+    );
+
+    // 3. Delete transaction
+    svc.delete_transaction(DeleteTransaction {
+        transaction_id: "tx-dag-1".into(),
+    })
+    .unwrap();
+
+    assert_eq!(svc.budget().get_category_spent(month, &cat_id), dollars(0));
+    assert_eq!(
+        svc.budget().get_category_leftover(month, &cat_id),
+        dollars(200)
+    );
+}
+
+#[test]
+fn test_sqlite_persistence_across_service_reopen() {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let db_path = temp_dir.path().join("budget.sqlite");
+
+    // 1. Create and populate budget
+    {
+        let mut svc = BudgetService::open(&db_path).unwrap();
+        let acc_id = svc
+            .create_account(CreateAccount {
+                id: "acc-persist".into(),
+                name: "Savings".into(),
+                offbudget: false,
+            })
+            .unwrap();
+
+        let payee_id = svc
+            .create_payee(CreatePayee {
+                id: "payee-store".into(),
+                name: "Coffee Shop".into(),
+            })
+            .unwrap();
+
+        let grp_id = svc
+            .create_category_group(CreateCategoryGroup {
+                id: "grp-persist".into(),
+                name: "Personal".into(),
+                is_income: false,
+            })
+            .unwrap();
+
+        let cat_id = svc
+            .create_category(CreateCategory {
+                id: "cat-persist".into(),
+                name: "Coffee".into(),
+                group_id: grp_id,
+                is_income: false,
+            })
+            .unwrap();
+
+        let tx_id = svc
+            .add_transaction(AddTransaction {
+                id: "tx-persist-1".into(),
+                account_id: acc_id,
+                date: ymd(2026, 11, 15).unwrap(),
+                amount: dollars(-5),
+                payee_id: Some(payee_id.clone()),
+                category_id: Some(cat_id.clone()),
+                notes: Some("Latte".into()),
+                cleared: true,
+            })
+            .unwrap();
+
+        // Update payee name
+        svc.rename_payee(RenamePayee {
+            payee_id,
+            new_name: "Artisan Coffee".into(),
+        })
+        .unwrap();
+
+        // Update transaction amount
+        svc.update_transaction(UpdateTransaction {
+            transaction_id: tx_id,
+            date: None,
+            amount: Some(dollars(-7)),
+            payee_id: None,
+            category_id: None,
+            notes: Some(Some("Large Latte".into())),
+            cleared: None,
+        })
+        .unwrap();
+    }
+
+    // 2. Re-open from disk and verify persistence
+    {
+        let svc = BudgetService::open(&db_path).unwrap();
+        assert_eq!(svc.account("acc-persist").unwrap().name, "Savings");
+        assert_eq!(svc.payee("payee-store").unwrap().name, "Artisan Coffee");
+        assert_eq!(svc.category("cat-persist").unwrap().name, "Coffee");
+
+        let tx = svc.transactions_for_account("acc-persist");
+        assert_eq!(tx.len(), 1);
+        assert_eq!(tx[0].amount, dollars(-7));
+        assert_eq!(tx[0].notes.as_deref(), Some("Large Latte"));
+    }
 }

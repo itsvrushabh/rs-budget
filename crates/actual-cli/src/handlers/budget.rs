@@ -3,8 +3,8 @@
 use actual_api::commands::{SetBudget, SetCarryover};
 use actual_api::BudgetService;
 use actual_core::Cents;
-use chrono::Local;
 use serde::Serialize;
+use time::OffsetDateTime;
 
 use crate::cli::BudgetSubcommand;
 use crate::output::{format_dollars, print_json};
@@ -33,7 +33,10 @@ struct BudgetSummaryView {
 pub fn handle(svc: &mut BudgetService, cmd: BudgetSubcommand, json: bool) -> Result<(), String> {
     match cmd {
         BudgetSubcommand::Inspect { month } => {
-            let m = month.unwrap_or_else(|| Local::now().format("%Y-%m").to_string());
+            let m = month.unwrap_or_else(|| {
+                let now = OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc());
+                format!("{:04}-{:02}", now.year(), u8::from(now.month()))
+            });
             let budget = svc.budget();
 
             let to_budget = budget.get_to_budget(&m);

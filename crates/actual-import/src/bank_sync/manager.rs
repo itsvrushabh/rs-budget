@@ -12,8 +12,8 @@ use crate::error::ImportError;
 use crate::models::ImportedTransaction;
 use actual_core::Transaction;
 use actual_crypto::{cipher, Key};
-use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
+use time::{Duration, OffsetDateTime};
 
 /// Serializable configuration container containing linked accounts and provider credentials.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -180,10 +180,10 @@ impl BankSyncManager {
         };
 
         // Calculate delta start date
-        let start_time: DateTime<Utc> =
-            last_sync.unwrap_or_else(|| Utc::now() - Duration::days(90));
-        let start_date = start_time.date_naive();
-        let start_sec = start_time.timestamp();
+        let start_time: OffsetDateTime =
+            last_sync.unwrap_or_else(|| OffsetDateTime::now_utc() - Duration::days(90));
+        let start_date = start_time.date();
+        let start_sec = start_time.unix_timestamp();
 
         let raw_transactions = match provider {
             BankProviderType::SimpleFin => {
@@ -291,7 +291,7 @@ impl BankSyncManager {
             .iter_mut()
             .find(|a| a.actual_account_id == actual_account_id)
         {
-            account.last_sync = Some(Utc::now());
+            account.last_sync = Some(OffsetDateTime::now_utc());
         }
 
         Ok(processed_result)

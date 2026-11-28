@@ -78,7 +78,7 @@ impl Deduplicator {
                     }
 
                     if ex.amount == item.amount {
-                        let diff_days = (ex.date - item.date).num_days().abs();
+                        let diff_days = (ex.date - item.date).whole_days().abs();
                         if diff_days <= self.date_proximity_days {
                             found_duplicate = Some(ex.id.clone());
                             break;

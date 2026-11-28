@@ -6,6 +6,13 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
+/// Master server password descriptor containing the salted PBKDF2 hash.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ServerPassword {
+    pub hash: String,
+    pub salt: String,
+}
+
 /// Global shared state accessible across Axum request handlers.
 #[derive(Clone)]
 pub struct ServerState {
@@ -14,7 +21,7 @@ pub struct ServerState {
     /// Filesystem directory where uploaded `.actual` user backup archives are stored.
     pub data_dir: PathBuf,
     /// Master server password configured via environment or bootstrap.
-    pub server_password: Arc<Mutex<Option<String>>>,
+    pub server_password: Arc<Mutex<Option<ServerPassword>>>,
 }
 
 impl ServerState {
@@ -32,15 +39,35 @@ impl ServerState {
         Self::init_schema(&conn)?;
 
         // Load existing password from users table if present
-        let db_password: Option<String> = conn
+        let db_password: Option<(String, String)> = conn
             .query_row(
-                "SELECT password_hash FROM users WHERE id = 'default'",
+                "SELECT password_hash, salt FROM users WHERE id = 'default'",
                 [],
-                |row| row.get(0),
+                |row| {
+                    Ok((
+                        row.get(0)?,
+                        row.get::<_, Option<String>>(1)?.unwrap_or_default(),
+                    ))
+                },
             )
             .optional()?;
 
-        let effective_password = initial_password.or(db_password);
+        let effective_password = if let Some((hash, salt)) = db_password {
+            Some(ServerPassword { hash, salt })
+        } else if let Some(init_pass) = initial_password {
+            let (hash, salt) = actual_crypto::hash_password(&init_pass);
+            let now = time::OffsetDateTime::now_utc()
+                .format(&time::format_description::well_known::Rfc3339)
+                .unwrap_or_default();
+            conn.execute(
+                "INSERT INTO users (id, password_hash, salt, created_at) VALUES ('default', ?1, ?2, ?3)
+                 ON CONFLICT(id) DO UPDATE SET password_hash = ?1, salt = ?2",
+                rusqlite::params![hash, salt, now],
+            )?;
+            Some(ServerPassword { hash, salt })
+        } else {
+            None
+        };
 
         let state = Self {
             db: Arc::new(Mutex::new(conn)),

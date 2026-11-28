@@ -93,7 +93,11 @@ impl BackgroundSyncWorker {
             Ok(cycle_res) => {
                 let mut st = self.state.lock().map_err(|e| e.to_string())?;
                 st.status = SyncStatus::Synced;
-                st.last_synced_at = Some(chrono::Utc::now().to_rfc3339());
+                st.last_synced_at = Some(
+                    time::OffsetDateTime::now_utc()
+                        .format(&time::format_description::well_known::Rfc3339)
+                        .unwrap_or_default(),
+                );
                 st.last_uploaded_count = cycle_res.uploaded_count;
                 st.last_downloaded_count = cycle_res.downloaded_count;
                 st.failure_count = 0;

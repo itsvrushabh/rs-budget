@@ -112,7 +112,11 @@ fn test_differential_standard_envelope_fixture() {
 
     // Apply transactions
     for tx in &fixture.transactions {
-        let date = chrono::NaiveDate::parse_from_str(&tx.date, "%Y-%m-%d").unwrap();
+        let date = time::Date::parse(
+            &tx.date,
+            time::macros::format_description!("[year]-[month]-[day]"),
+        )
+        .unwrap();
         let mut t = Transaction::new(&tx.id, &tx.account_id, date, Cents::from_cents(tx.amount));
         t.category_id = tx.category_id.clone();
         t.payee_id = tx.payee.clone();

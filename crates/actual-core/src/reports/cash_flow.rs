@@ -63,7 +63,7 @@ impl CashFlowReport {
                 continue;
             }
 
-            let month_key = tx.date.format("%Y-%m").to_string();
+            let month_key = format!("{:04}-{:02}", tx.date.year(), u8::from(tx.date.month()));
             let entry = monthly_data.entry(month_key).or_insert((0, 0));
 
             let cents = tx.amount.as_cents();

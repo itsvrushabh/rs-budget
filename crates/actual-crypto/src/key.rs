@@ -2,7 +2,9 @@ use base64::prelude::*;
 use pbkdf2::pbkdf2_hmac;
 use serde::{Deserialize, Serialize};
 use sha2::Sha512;
+use subtle::ConstantTimeEq;
 use uuid::Uuid;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::error::CryptoError;
 
@@ -10,8 +12,9 @@ pub const PBKDF2_ITERATIONS: u32 = 10_000;
 pub const KEY_LENGTH_BYTES: usize = 32;
 
 /// A 256-bit cryptographic master encryption key compatible with Actual Budget.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
 pub struct Key {
+    #[zeroize(skip)]
     id: String,
     raw: [u8; KEY_LENGTH_BYTES],
     base64: String,
@@ -99,4 +102,37 @@ impl Key {
 pub struct KeySerialized {
     pub id: String,
     pub base64: String,
+}
+
+/// Hash a password with a random 16-byte salt using PBKDF2 (HMAC-SHA-512, 10,000 iterations).
+/// Returns `(hash_b64, salt_b64)`.
+pub fn hash_password(password: &str) -> (String, String) {
+    let mut salt = [0u8; 16];
+    getrandom::getrandom(&mut salt).expect("secure random for salt generation");
+    let salt_b64 = BASE64_STANDARD.encode(salt);
+    let mut raw_hash = [0u8; KEY_LENGTH_BYTES];
+    pbkdf2_hmac::<Sha512>(
+        password.as_bytes(),
+        salt_b64.as_bytes(),
+        PBKDF2_ITERATIONS,
+        &mut raw_hash,
+    );
+    let hash_b64 = BASE64_STANDARD.encode(raw_hash);
+    (hash_b64, salt_b64)
+}
+
+/// Verify a password against a stored PBKDF2 hash and salt using constant-time comparison.
+pub fn verify_password(password: &str, salt: &str, expected_hash: &str) -> bool {
+    let mut raw_hash = [0u8; KEY_LENGTH_BYTES];
+    pbkdf2_hmac::<Sha512>(
+        password.as_bytes(),
+        salt.as_bytes(),
+        PBKDF2_ITERATIONS,
+        &mut raw_hash,
+    );
+    let computed_b64 = BASE64_STANDARD.encode(raw_hash);
+    computed_b64
+        .as_bytes()
+        .ct_eq(expected_hash.as_bytes())
+        .into()
 }

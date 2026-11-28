@@ -1,7 +1,7 @@
 use actual_sync::proto::{EncryptedData, Message, MessageEnvelope, SyncRequest, SyncResponse};
 use actual_sync::timestamp::{HlcClock, Timestamp, DEFAULT_MAX_DRIFT};
 use actual_sync::{diff_merkle, TimestampError, TrieNode};
-use chrono::{DateTime, Utc};
+use time::OffsetDateTime;
 
 #[test]
 fn test_timestamp_parsing_and_formatting() {
@@ -252,11 +252,18 @@ fn test_merkle_diff_known_time_difference() {
 
     // Diff returns 2018-11-02T17:15:00.000Z
     let diff_time = diff_merkle(&trie1, &trie2).expect("diff should find divergence");
-    let dt = DateTime::<Utc>::from_timestamp_millis(diff_time as i64).unwrap();
-    assert_eq!(
-        dt.format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string(),
-        "2018-11-02T17:15:00.000Z"
+    let dt = OffsetDateTime::from_unix_timestamp_nanos(i128::from(diff_time) * 1_000_000).unwrap();
+    let formatted = format!(
+        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:03}Z",
+        dt.year(),
+        u8::from(dt.month()),
+        dt.day(),
+        dt.hour(),
+        dt.minute(),
+        dt.second(),
+        dt.millisecond()
     );
+    assert_eq!(formatted, "2018-11-02T17:15:00.000Z");
 
     // Once both sync up by inserting missing messages, tries become identical
     insert_mock(

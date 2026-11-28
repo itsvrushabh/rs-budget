@@ -209,7 +209,7 @@ fn test_web_app_budget_lifecycle() {
     assert_eq!(app.sync_bridge.pending_queue_size(), 1);
 
     // Add transaction
-    let date = chrono::NaiveDate::from_ymd_opt(2026, 11, 4).unwrap();
+    let date = time::macros::date!(2026 - 11 - 04);
     let tx = Transaction::new("tx-100", "acc-checking", date, Cents(5000));
     app.add_transaction(tx);
     assert_eq!(app.transactions.len(), 1);

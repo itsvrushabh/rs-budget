@@ -7,7 +7,15 @@ use actual_import::bank_sync::{
     BankProviderType, BankSyncManager, GoCardlessClient, SimpleFinClient,
 };
 use actual_import::{ImportError, PayeeCleaner};
-use chrono::NaiveDate;
+use time::Date as NaiveDate;
+fn ymd(y: i32, m: u32, d: u32) -> Option<NaiveDate> {
+    NaiveDate::from_calendar_date(
+        y,
+        time::Month::try_from(u8::try_from(m).ok()?).ok()?,
+        u8::try_from(d).ok()?,
+    )
+    .ok()
+}
 use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::thread;
@@ -239,14 +247,14 @@ fn test_gocardless_parse_transactions() {
     assert_eq!(txs.len(), 2);
 
     // Booked transaction
-    assert_eq!(txs[0].date, NaiveDate::from_ymd_opt(2024, 5, 10).unwrap());
+    assert_eq!(txs[0].date, ymd(2024, 5, 10).unwrap());
     assert_eq!(txs[0].amount, Cents::from_cents(-3280));
     assert_eq!(txs[0].payee.as_deref(), Some("REWE Supermarkt"));
     assert_eq!(txs[0].imported_id.as_deref(), Some("gc_tx_001"));
     assert!(txs[0].cleared);
 
     // Pending transaction
-    assert_eq!(txs[1].date, NaiveDate::from_ymd_opt(2024, 5, 12).unwrap());
+    assert_eq!(txs[1].date, ymd(2024, 5, 12).unwrap());
     assert_eq!(txs[1].amount, Cents::from_cents(-1500));
     assert_eq!(txs[1].payee.as_deref(), Some("CAFE BERLIN"));
     assert_eq!(txs[1].imported_id.as_deref(), Some("gc_tx_pending_002"));
@@ -340,7 +348,7 @@ fn test_bank_sync_delta_deduplication_and_payee_cleaning() {
     let mut existing_tx = Transaction::new(
         "tx-exist-1",
         "acc-main",
-        NaiveDate::from_ymd_opt(2024, 5, 10).unwrap(),
+        ymd(2024, 5, 10).unwrap(),
         Cents::from_cents(-4550),
     );
     existing_tx.imported_id = Some("ext-tx-100".into());
@@ -348,7 +356,7 @@ fn test_bank_sync_delta_deduplication_and_payee_cleaning() {
     let existing_tx_approx = Transaction::new(
         "tx-exist-2",
         "acc-main",
-        NaiveDate::from_ymd_opt(2024, 5, 15).unwrap(),
+        ymd(2024, 5, 15).unwrap(),
         Cents::from_cents(-2500),
     );
 
@@ -359,18 +367,18 @@ fn test_bank_sync_delta_deduplication_and_payee_cleaning() {
     // 2. Proximity match (-2500 on 2024-05-16, 1 day diff) -> duplicate
     // 3. New unique transaction with dirty payee needing cleaning
     let mut incoming_exact = actual_import::ImportedTransaction::new(
-        NaiveDate::from_ymd_opt(2024, 5, 10).unwrap(),
+        ymd(2024, 5, 10).unwrap(),
         Cents::from_cents(-4550),
     );
     incoming_exact.imported_id = Some("ext-tx-100".into());
 
     let incoming_prox = actual_import::ImportedTransaction::new(
-        NaiveDate::from_ymd_opt(2024, 5, 16).unwrap(),
+        ymd(2024, 5, 16).unwrap(),
         Cents::from_cents(-2500),
     );
 
     let mut incoming_new = actual_import::ImportedTransaction::new(
-        NaiveDate::from_ymd_opt(2024, 5, 18).unwrap(),
+        ymd(2024, 5, 18).unwrap(),
         Cents::from_cents(-1299),
     );
     incoming_new.imported_payee = Some("POS DEBIT STARBUCKS #08492 CA".into());
@@ -390,7 +398,7 @@ fn test_bank_sync_delta_deduplication_and_payee_cleaning() {
     assert_eq!(unique_tx.payee.as_deref(), Some("STARBUCKS"));
     assert_eq!(
         result.latest_transaction_date,
-        Some(NaiveDate::from_ymd_opt(2024, 5, 18).unwrap())
+        Some(ymd(2024, 5, 18).unwrap())
     );
 }
 

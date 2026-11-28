@@ -94,7 +94,8 @@ impl CrdtTracker {
         column: &str,
         value: &str,
     ) -> Result<CrdtMessage, SyncError> {
-        let now = chrono::Utc::now().timestamp_millis().max(0) as u64;
+        let now =
+            (time::OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000).max(0) as u64;
         let timestamp = self.clock.send(now)?;
 
         // Apply mutation to target table
@@ -209,7 +210,8 @@ impl CrdtTracker {
             // Advance Merkle trie and HLC clock if newly seen
             if inserted_rows > 0 {
                 self.merkle.insert(&msg.timestamp);
-                let now = chrono::Utc::now().timestamp_millis().max(0) as u64;
+                let now = (time::OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000)
+                    .max(0) as u64;
                 let _ = self.clock.recv(&msg.timestamp, now);
             }
 

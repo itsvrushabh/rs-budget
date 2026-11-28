@@ -7,10 +7,10 @@ use axum::http::request::Parts;
 use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use chrono::Utc;
 use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use time::OffsetDateTime as Utc;
 use uuid::Uuid;
 
 /// Request payload for bootstrap and login endpoints.
@@ -53,7 +53,7 @@ impl FromRequestParts<ServerState> for AuthSession {
                 .db
                 .lock()
                 .map_err(|e| ServerError::Internal(e.to_string()))?;
-            let now = Utc::now().timestamp();
+            let now = Utc::now_utc().unix_timestamp();
             let count: i64 = conn.query_row(
                 "SELECT COUNT(1) FROM sessions WHERE token = ?1 AND expires_at > ?2",
                 params![token, now],
@@ -143,20 +143,26 @@ pub async fn bootstrap_handler(
         ));
     }
 
-    *pass_lock = Some(payload.password.clone());
+    let (hash, salt) = actual_crypto::hash_password(&payload.password);
+    *pass_lock = Some(crate::state::ServerPassword {
+        hash: hash.clone(),
+        salt: salt.clone(),
+    });
     drop(pass_lock);
 
-    // Persist password to users table
+    // Persist hashed password and salt to users table
     {
         let conn = state
             .db
             .lock()
             .map_err(|e| ServerError::Internal(e.to_string()))?;
-        let now = Utc::now().to_rfc3339();
+        let now = Utc::now_utc()
+            .format(&time::format_description::well_known::Rfc3339)
+            .unwrap_or_default();
         conn.execute(
-            "INSERT INTO users (id, password_hash, salt, created_at) VALUES ('default', ?1, '', ?2)
-             ON CONFLICT(id) DO UPDATE SET password_hash = ?1",
-            params![payload.password, now],
+            "INSERT INTO users (id, password_hash, salt, created_at) VALUES ('default', ?1, ?2, ?3)
+             ON CONFLICT(id) DO UPDATE SET password_hash = ?1, salt = ?2",
+            params![hash, salt, now],
         )?;
     }
 
@@ -187,7 +193,35 @@ pub async fn login_handler(
     };
     drop(pass_lock);
 
-    if payload.password != expected {
+    let is_valid = if expected.salt.is_empty() {
+        use subtle::ConstantTimeEq;
+        let matches: bool = payload
+            .password
+            .as_bytes()
+            .ct_eq(expected.hash.as_bytes())
+            .into();
+        if matches {
+            // Upgrade legacy plaintext password to salted PBKDF2 hash
+            let (new_hash, new_salt) = actual_crypto::hash_password(&payload.password);
+            if let Ok(conn) = state.db.lock() {
+                let _ = conn.execute(
+                    "UPDATE users SET password_hash = ?1, salt = ?2 WHERE id = 'default'",
+                    params![new_hash, new_salt],
+                );
+            }
+            if let Ok(mut lock) = state.server_password.lock() {
+                *lock = Some(crate::state::ServerPassword {
+                    hash: new_hash,
+                    salt: new_salt,
+                });
+            }
+        }
+        matches
+    } else {
+        actual_crypto::verify_password(&payload.password, &expected.salt, &expected.hash)
+    };
+
+    if !is_valid {
         return Err(ServerError::Unauthorized);
     }
 
@@ -213,9 +247,11 @@ pub async fn validate_handler(_session: AuthSession) -> Result<Response, ServerE
 /// Helper to create and persist a new session token valid for 30 days.
 pub fn create_session(state: &ServerState) -> Result<String, ServerError> {
     let token = Uuid::new_v4().to_string();
-    let now = Utc::now();
-    let created_at = now.to_rfc3339();
-    let expires_at = now.timestamp() + (30 * 24 * 3600); // 30 days
+    let now = Utc::now_utc();
+    let created_at = now
+        .format(&time::format_description::well_known::Rfc3339)
+        .unwrap_or_default();
+    let expires_at = now.unix_timestamp() + (30 * 24 * 3600); // 30 days
 
     let conn = state
         .db

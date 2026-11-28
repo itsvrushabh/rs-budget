@@ -4,7 +4,15 @@ use actual_core::{Cents, Transaction};
 use actual_import::{
     CsvConfig, CsvParser, Deduplicator, ImportedTransaction, OfxParser, PayeeCleaner, QifParser,
 };
-use chrono::NaiveDate;
+use time::Date as NaiveDate;
+fn ymd(y: i32, m: u32, d: u32) -> Option<NaiveDate> {
+    NaiveDate::from_calendar_date(
+        y,
+        time::Month::try_from(u8::try_from(m).ok()?).ok()?,
+        u8::try_from(d).ok()?,
+    )
+    .ok()
+}
 
 fn dollars(d: i64) -> Cents {
     Cents::from_cents(d * 100)
@@ -29,7 +37,7 @@ fn test_parse_qif_fixture() {
 
     // 1. Trader Joe's: raw "POS DEBIT TRADER JOE'S #1234 NY" -> cleaned "TRADER JOE'S"
     let t1 = &txs[0];
-    assert_eq!(t1.date, NaiveDate::from_ymd_opt(2024, 5, 15).unwrap());
+    assert_eq!(t1.date, ymd(2024, 5, 15).unwrap());
     assert_eq!(t1.amount, cents(-4250));
     assert_eq!(t1.payee.as_deref(), Some("TRADER JOE'S"));
     assert_eq!(
@@ -41,14 +49,14 @@ fn test_parse_qif_fixture() {
 
     // 2. Paycheck: "DIRECT DEP ACME CORP" -> "ACME CORP"
     let t2 = &txs[1];
-    assert_eq!(t2.date, NaiveDate::from_ymd_opt(2024, 5, 16).unwrap());
+    assert_eq!(t2.date, ymd(2024, 5, 16).unwrap());
     assert_eq!(t2.amount, dollars(2500));
     assert_eq!(t2.payee.as_deref(), Some("ACME CORP"));
     assert_eq!(t2.notes.as_deref(), Some("Paycheck"));
 
     // 3. Split transaction: Target -$100 split into -$60 and -$40
     let t3 = &txs[2];
-    assert_eq!(t3.date, NaiveDate::from_ymd_opt(2024, 5, 18).unwrap());
+    assert_eq!(t3.date, ymd(2024, 5, 18).unwrap());
     assert_eq!(t3.amount, dollars(-100));
     assert_eq!(t3.payee.as_deref(), Some("TARGET"));
     assert_eq!(t3.subtransactions.len(), 2);
@@ -84,7 +92,7 @@ fn test_parse_ofx_sgml_fixture() {
 
     // 1. Coffee shop: "SQ *COFFEE SHOP" -> "COFFEE SHOP"
     let t1 = &txs[0];
-    assert_eq!(t1.date, NaiveDate::from_ymd_opt(2024, 5, 10).unwrap());
+    assert_eq!(t1.date, ymd(2024, 5, 10).unwrap());
     assert_eq!(t1.amount, cents(-3575));
     assert_eq!(t1.imported_id.as_deref(), Some("FITID-20240510-001"));
     assert_eq!(t1.payee.as_deref(), Some("COFFEE SHOP"));
@@ -92,14 +100,14 @@ fn test_parse_ofx_sgml_fixture() {
 
     // 2. Direct dep salary
     let t2 = &txs[1];
-    assert_eq!(t2.date, NaiveDate::from_ymd_opt(2024, 5, 15).unwrap());
+    assert_eq!(t2.date, ymd(2024, 5, 15).unwrap());
     assert_eq!(t2.amount, dollars(1500));
     assert_eq!(t2.imported_id.as_deref(), Some("FITID-20240515-002"));
     assert_eq!(t2.payee.as_deref(), Some("EMPLOYER"));
 
     // 3. Netflix: "WWW.NETFLIX.COM CA" -> "NETFLIX.COM"
     let t3 = &txs[2];
-    assert_eq!(t3.date, NaiveDate::from_ymd_opt(2024, 5, 18).unwrap());
+    assert_eq!(t3.date, ymd(2024, 5, 18).unwrap());
     assert_eq!(t3.amount, cents(-1250));
     assert_eq!(t3.imported_id.as_deref(), Some("FITID-20240518-003"));
     assert_eq!(t3.payee.as_deref(), Some("NETFLIX.COM"));
@@ -116,7 +124,7 @@ fn test_parse_ofx_xml_fixture() {
 
     assert_eq!(txs.len(), 1);
     let t = &txs[0];
-    assert_eq!(t.date, NaiveDate::from_ymd_opt(2024, 5, 12).unwrap());
+    assert_eq!(t.date, ymd(2024, 5, 12).unwrap());
     assert_eq!(t.amount, cents(-8520));
     assert_eq!(t.imported_id.as_deref(), Some("XML-FITID-999"));
     assert_eq!(t.payee.as_deref(), Some("WHOLEFDS SOHO"));
@@ -147,7 +155,7 @@ fn test_parse_csv_signed_fixture() {
 
     // 1. Uber Eats: "POS PURCHASE UBER EATS #882" -> "UBER EATS"
     let t1 = &txs[0];
-    assert_eq!(t1.date, NaiveDate::from_ymd_opt(2024, 5, 1).unwrap());
+    assert_eq!(t1.date, ymd(2024, 5, 1).unwrap());
     assert_eq!(t1.amount, cents(-2450));
     assert_eq!(t1.payee.as_deref(), Some("UBER EATS"));
     assert_eq!(t1.category.as_deref(), Some("Dining"));
@@ -155,13 +163,13 @@ fn test_parse_csv_signed_fixture() {
 
     // 2. Paypal: "PAYPAL *GITHUB" -> "GITHUB"
     let t2 = &txs[1];
-    assert_eq!(t2.date, NaiveDate::from_ymd_opt(2024, 5, 5).unwrap());
+    assert_eq!(t2.date, ymd(2024, 5, 5).unwrap());
     assert_eq!(t2.amount, dollars(-10));
     assert_eq!(t2.payee.as_deref(), Some("GITHUB"));
 
     // 3. Consulting income: +$3,200
     let t3 = &txs[2];
-    assert_eq!(t3.date, NaiveDate::from_ymd_opt(2024, 5, 15).unwrap());
+    assert_eq!(t3.date, ymd(2024, 5, 15).unwrap());
     assert_eq!(t3.amount, dollars(3200));
 }
 
@@ -192,18 +200,18 @@ fn test_parse_csv_dual_columns_and_custom_delimiter() {
 
     // 1. Outflow: CVS PHARMACY $15.75 -> -$15.75
     let t1 = &txs[0];
-    assert_eq!(t1.date, NaiveDate::from_ymd_opt(2024, 5, 2).unwrap());
+    assert_eq!(t1.date, ymd(2024, 5, 2).unwrap());
     assert_eq!(t1.amount, cents(-1575));
     assert_eq!(t1.payee.as_deref(), Some("CVS PHARMACY"));
 
     // 2. Inflow: Freelance +$750.00
     let t2 = &txs[1];
-    assert_eq!(t2.date, NaiveDate::from_ymd_opt(2024, 5, 10).unwrap());
+    assert_eq!(t2.date, ymd(2024, 5, 10).unwrap());
     assert_eq!(t2.amount, dollars(750));
 
     // 3. Outflow: Shell Oil $45.00 -> -$45.00
     let t3 = &txs[2];
-    assert_eq!(t3.date, NaiveDate::from_ymd_opt(2024, 5, 14).unwrap());
+    assert_eq!(t3.date, ymd(2024, 5, 14).unwrap());
     assert_eq!(t3.amount, dollars(-45));
 }
 
@@ -214,38 +222,25 @@ fn test_strict_and_proximity_deduplication() {
     let existing = vec![
         // Existing transaction with known imported_id
         {
-            let mut tx = Transaction::new(
-                "ex-1",
-                "acc-1",
-                NaiveDate::from_ymd_opt(2024, 5, 10).unwrap(),
-                cents(-3575),
-            );
+            let mut tx = Transaction::new("ex-1", "acc-1", ymd(2024, 5, 10).unwrap(), cents(-3575));
             tx.imported_id = Some("FITID-20240510-001".to_string());
             tx
         },
         // Existing manual transaction without imported_id on May 15 for -$50.00
-        Transaction::new(
-            "ex-2",
-            "acc-1",
-            NaiveDate::from_ymd_opt(2024, 5, 15).unwrap(),
-            dollars(-50),
-        ),
+        Transaction::new("ex-2", "acc-1", ymd(2024, 5, 15).unwrap(), dollars(-50)),
     ];
 
     let incoming = vec![
         // 1. Strict duplicate: same FITID
         {
-            let mut it = ImportedTransaction::new(
-                NaiveDate::from_ymd_opt(2024, 5, 10).unwrap(),
-                cents(-3575),
-            );
+            let mut it = ImportedTransaction::new(ymd(2024, 5, 10).unwrap(), cents(-3575));
             it.imported_id = Some("FITID-20240510-001".to_string());
             it
         },
         // 2. Proximity duplicate: May 17 (-$50.00) matches ex-2 on May 15 (2 days diff <= 3 days window)
-        ImportedTransaction::new(NaiveDate::from_ymd_opt(2024, 5, 17).unwrap(), dollars(-50)),
+        ImportedTransaction::new(ymd(2024, 5, 17).unwrap(), dollars(-50)),
         // 3. Unique transaction: May 20 for -$25.00
-        ImportedTransaction::new(NaiveDate::from_ymd_opt(2024, 5, 20).unwrap(), dollars(-25)),
+        ImportedTransaction::new(ymd(2024, 5, 20).unwrap(), dollars(-25)),
     ];
 
     let dedup = Deduplicator::new(3); // +/- 3 days window
@@ -290,8 +285,7 @@ fn test_payee_cleaner_patterns() {
 
 #[test]
 fn test_into_domain_transaction_conversion() {
-    let mut item =
-        ImportedTransaction::new(NaiveDate::from_ymd_opt(2024, 5, 18).unwrap(), dollars(-100));
+    let mut item = ImportedTransaction::new(ymd(2024, 5, 18).unwrap(), dollars(-100));
     item.payee = Some("TARGET".to_string());
     item.imported_id = Some("TARGET-REF-1".to_string());
     item.notes = Some("Household & Groceries".to_string());

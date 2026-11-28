@@ -1,4 +1,7 @@
-use chrono::NaiveDate;
+use time::Date as NaiveDate;
+fn ymd(y: i32, m: u8, d: u8) -> Option<NaiveDate> {
+    NaiveDate::from_calendar_date(y, time::Month::try_from(m).ok()?, d).ok()
+}
 
 use actual_core::cents::Cents;
 use actual_core::rules::{
@@ -16,7 +19,7 @@ fn test_rule_condition_payee_matching() {
     let mut tx = Transaction::new(
         "tx_1",
         "acct_checking",
-        NaiveDate::from_ymd_opt(2026, 11, 2).unwrap(),
+        ymd(2026, 11, 2).unwrap(),
         dollars(-45),
     );
     tx.imported_payee = Some("AMZN MKTP US*123456".to_string());
@@ -60,7 +63,7 @@ fn test_rule_condition_amount_and_range() {
     let tx = Transaction::new(
         "tx_2",
         "acct_checking",
-        NaiveDate::from_ymd_opt(2026, 11, 2).unwrap(),
+        ymd(2026, 11, 2).unwrap(),
         dollars(-120),
     );
 
@@ -84,7 +87,7 @@ fn test_rule_condition_amount_and_range() {
     let tx_approx = Transaction::new(
         "tx_approx",
         "acct_checking",
-        NaiveDate::from_ymd_opt(2026, 11, 2).unwrap(),
+        ymd(2026, 11, 2).unwrap(),
         Cents::from_cents(-10150), // -$101.50
     );
     let cond_approx = Condition::new(
@@ -100,7 +103,7 @@ fn test_rule_action_auto_categorize_and_notes() {
     let mut tx = Transaction::new(
         "tx_3",
         "acct_checking",
-        NaiveDate::from_ymd_opt(2026, 11, 2).unwrap(),
+        ymd(2026, 11, 2).unwrap(),
         dollars(-15),
     );
     tx.imported_payee = Some("STARBUCKS #1234 COFFEE".to_string());
@@ -146,7 +149,7 @@ fn test_rule_action_auto_split() {
     let mut tx = Transaction::new(
         "tx_paycheck",
         "acct_checking",
-        NaiveDate::from_ymd_opt(2026, 11, 1).unwrap(),
+        ymd(2026, 11, 1).unwrap(),
         dollars(3000),
     );
     tx.imported_payee = Some("ACME CORP PAYROLL".to_string());
@@ -254,7 +257,7 @@ fn test_rules_engine_stage_ordering() {
     let mut tx = Transaction::new(
         "tx_stage",
         "acct_checking",
-        NaiveDate::from_ymd_opt(2026, 11, 2).unwrap(),
+        ymd(2026, 11, 2).unwrap(),
         dollars(-50),
     );
 
