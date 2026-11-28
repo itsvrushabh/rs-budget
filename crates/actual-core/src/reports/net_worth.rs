@@ -5,8 +5,8 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use chrono::{Datelike, NaiveDate};
 use serde::{Deserialize, Serialize};
+use time::Date as NaiveDate;
 
 use crate::account::Account;
 use crate::cents::Cents;
@@ -99,7 +99,7 @@ impl NetWorthReport {
         // Generate all months in range.
         let mut cursor = first_of_month(start);
         while cursor <= end {
-            let month_key = cursor.format("%Y-%m").to_string();
+            let month_key = format!("{:04}-{:02}", cursor.year(), u8::from(cursor.month()));
             months_map
                 .entry(month_key)
                 .or_insert((Cents::ZERO, Cents::ZERO));
@@ -161,15 +161,15 @@ impl NetWorthReport {
 
 /// Return the first day of the month containing `date`.
 fn first_of_month(date: NaiveDate) -> NaiveDate {
-    NaiveDate::from_ymd_opt(date.year(), date.month(), 1).unwrap()
+    NaiveDate::from_calendar_date(date.year(), date.month(), 1).unwrap()
 }
 
 /// Return the first day of the next month.
 fn next_month(date: NaiveDate) -> NaiveDate {
-    if date.month() == 12 {
-        NaiveDate::from_ymd_opt(date.year() + 1, 1, 1).unwrap()
+    if date.month() == time::Month::December {
+        NaiveDate::from_calendar_date(date.year() + 1, time::Month::January, 1).unwrap()
     } else {
-        NaiveDate::from_ymd_opt(date.year(), date.month() + 1, 1).unwrap()
+        NaiveDate::from_calendar_date(date.year(), date.month().next(), 1).unwrap()
     }
 }
 
@@ -177,8 +177,9 @@ fn next_month(date: NaiveDate) -> NaiveDate {
 fn last_day_of_month_from_key(key: &str) -> NaiveDate {
     let parts: Vec<&str> = key.split('-').collect();
     let year: i32 = parts[0].parse().unwrap();
-    let month: u32 = parts[1].parse().unwrap();
-    let first = NaiveDate::from_ymd_opt(year, month, 1).unwrap();
+    let month_num: u8 = parts[1].parse().unwrap();
+    let month = time::Month::try_from(month_num).unwrap();
+    let first = NaiveDate::from_calendar_date(year, month, 1).unwrap();
     let next = next_month(first);
-    next.pred_opt().unwrap()
+    next.previous_day().unwrap()
 }

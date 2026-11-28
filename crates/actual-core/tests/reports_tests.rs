@@ -6,7 +6,15 @@ use actual_core::reports::{
     AccountType, CashFlowReport, NetWorthReport, ReportFilter, SpendingReport,
 };
 use actual_core::{Account, Category, CategoryGroup, Cents, Transaction};
-use chrono::NaiveDate;
+use time::Date as NaiveDate;
+fn ymd(y: i32, m: u32, d: u32) -> Option<NaiveDate> {
+    NaiveDate::from_calendar_date(
+        y,
+        time::Month::try_from(u8::try_from(m).ok()?).ok()?,
+        u8::try_from(d).ok()?,
+    )
+    .ok()
+}
 
 fn dollars(d: i64) -> Cents {
     Cents::from_cents(d * 100)
@@ -24,12 +32,7 @@ fn create_tx(
     category_id: Option<&str>,
     payee_id: Option<&str>,
 ) -> Transaction {
-    let mut tx = Transaction::new(
-        id,
-        account_id,
-        NaiveDate::from_ymd_opt(date.0, date.1, date.2).unwrap(),
-        amount,
-    );
+    let mut tx = Transaction::new(id, account_id, ymd(date.0, date.1, date.2).unwrap(), amount);
     tx.category_id = category_id.map(String::from);
     tx.payee_id = payee_id.map(String::from);
     tx
@@ -132,10 +135,8 @@ fn test_net_worth_with_date_filter() {
     ];
 
     // Filter only Jan 2024 to Feb 2024; running balance must include Dec 2023!
-    let filter = ReportFilter::new().with_date_range(
-        NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
-        NaiveDate::from_ymd_opt(2024, 2, 28).unwrap(),
-    );
+    let filter =
+        ReportFilter::new().with_date_range(ymd(2024, 1, 1).unwrap(), ymd(2024, 2, 28).unwrap());
 
     let report = NetWorthReport::compute(&transactions, &accounts, &account_types, &filter);
     assert_eq!(report.months.len(), 2);

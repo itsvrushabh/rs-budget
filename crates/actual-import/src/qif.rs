@@ -4,7 +4,7 @@
 //! supporting dates, amounts, payees, memos, cleared status, and split categories.
 
 use actual_core::Cents;
-use chrono::NaiveDate;
+use time::Date as NaiveDate;
 
 use crate::cleaner::PayeeCleaner;
 use crate::error::ImportError;
@@ -150,12 +150,17 @@ impl QifParser {
 /// Examples: "2024-05-15", "05/15/2024", "5/15'24", "15/05/2024", "05/15/24".
 pub fn parse_qif_date(s: &str) -> Result<NaiveDate, ImportError> {
     let clean = s.replace('\'', "/");
-    let formats = [
-        "%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%d/%m/%Y", "%d/%m/%y", "%Y/%m/%d",
+    let formats: &[&[time::format_description::FormatItem<'_>]] = &[
+        time::macros::format_description!("[year]-[month]-[day]"),
+        time::macros::format_description!("[month]/[day]/[year]"),
+        time::macros::format_description!("[month]/[day]/[year repr:last_two]"),
+        time::macros::format_description!("[day]/[month]/[year]"),
+        time::macros::format_description!("[day]/[month]/[year repr:last_two]"),
+        time::macros::format_description!("[year]/[month]/[day]"),
     ];
 
-    for fmt in &formats {
-        if let Ok(d) = NaiveDate::parse_from_str(&clean, fmt) {
+    for fmt in formats {
+        if let Ok(d) = NaiveDate::parse(&clean, fmt) {
             return Ok(d);
         }
     }

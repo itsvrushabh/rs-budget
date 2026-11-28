@@ -2,8 +2,8 @@
 
 use actual_api::commands::GetUpcomingTransactions;
 use actual_api::BudgetService;
-use chrono::NaiveDate;
 use serde::Serialize;
+use time::Date as NaiveDate;
 
 use crate::cli::ScheduleSubcommand;
 use crate::output::{format_dollars, print_json};
@@ -31,13 +31,18 @@ pub fn handle(svc: &BudgetService, cmd: ScheduleSubcommand, json: bool) -> Resul
             Ok(())
         }
         ScheduleSubcommand::Upcoming { id, until } => {
-            let until_date = NaiveDate::parse_from_str(&until, "%Y-%m-%d")
-                .map_err(|e| format!("Invalid until date: {e}"))?;
+            let until_date = NaiveDate::parse(
+                &until,
+                time::macros::format_description!("[year]-[month]-[day]"),
+            )
+            .map_err(|e| format!("Invalid until date: {e}"))?;
 
             let res = svc
                 .get_upcoming_transactions(GetUpcomingTransactions {
                     schedule_id: id.clone(),
-                    from_date: chrono::Local::now().date_naive(),
+                    from_date: time::OffsetDateTime::now_local()
+                        .unwrap_or_else(|_| time::OffsetDateTime::now_utc())
+                        .date(),
                     until_date,
                 })
                 .map_err(|e| e.to_string())?;

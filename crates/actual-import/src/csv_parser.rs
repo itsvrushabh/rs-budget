@@ -4,9 +4,9 @@
 //! and either signed amount columns or split dual inflow/outflow columns.
 
 use actual_core::Cents;
-use chrono::NaiveDate;
 use csv::ReaderBuilder;
 use serde::{Deserialize, Serialize};
+use time::Date as NaiveDate;
 
 use crate::cleaner::PayeeCleaner;
 use crate::error::ImportError;
@@ -148,7 +148,14 @@ impl CsvParser {
             }
 
             let date = if let Some(ref fmt) = config.date_format {
-                NaiveDate::parse_from_str(raw_date, fmt)
+                let time_fmt_str = fmt
+                    .replace("%Y", "[year]")
+                    .replace("%m", "[month]")
+                    .replace("%d", "[day]")
+                    .replace("%y", "[year repr:last_two]");
+                let parsed_fmt = time::format_description::parse_borrowed::<2>(&time_fmt_str)
+                    .map_err(|_| ImportError::InvalidDate(raw_date.to_string(), fmt.clone()))?;
+                NaiveDate::parse(raw_date, &parsed_fmt)
                     .map_err(|_| ImportError::InvalidDate(raw_date.to_string(), fmt.clone()))?
             } else {
                 parse_qif_date(raw_date)?

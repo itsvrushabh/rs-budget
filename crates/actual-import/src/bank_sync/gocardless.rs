@@ -8,8 +8,8 @@ use crate::bank_sync::types::BankSyncAccount;
 use crate::error::ImportError;
 use crate::models::ImportedTransaction;
 use actual_core::Cents;
-use chrono::{NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
+use time::{Date as NaiveDate, OffsetDateTime};
 
 /// Financial institution metadata from GoCardless directory.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -182,7 +182,7 @@ impl GoCardlessClient {
             .body_mut()
             .read_json()
             .map_err(|e| ImportError::Network(format!("Failed to parse JSON: {e}")))?;
-        let now_sec = Utc::now().timestamp();
+        let now_sec = OffsetDateTime::now_utc().unix_timestamp();
         self.access_token = Some(token_resp.access);
         self.refresh_token = token_resp.refresh;
         self.token_expires_at = token_resp.access_expires.map(|exp| now_sec + exp);
@@ -213,7 +213,7 @@ impl GoCardlessClient {
             .body_mut()
             .read_json()
             .map_err(|e| ImportError::Network(format!("Failed to parse JSON: {e}")))?;
-        let now_sec = Utc::now().timestamp();
+        let now_sec = OffsetDateTime::now_utc().unix_timestamp();
         self.access_token = Some(token_resp.access);
         self.token_expires_at = token_resp.access_expires.map(|exp| now_sec + exp);
 
@@ -222,7 +222,7 @@ impl GoCardlessClient {
 
     /// Ensures an active access token is present, refreshing if expired.
     pub fn ensure_token(&mut self) -> Result<&str, ImportError> {
-        let now_sec = Utc::now().timestamp();
+        let now_sec = OffsetDateTime::now_utc().unix_timestamp();
         let needs_refresh = match self.token_expires_at {
             Some(exp) => now_sec >= exp - 60, // Refresh 60s early
             None => self.access_token.is_none(),
@@ -376,7 +376,10 @@ impl GoCardlessClient {
         let mut req = ureq::get(&endpoint).header("Authorization", &format!("Bearer {token}"));
 
         if let Some(d) = date_from {
-            req = req.query("date_from", d.format("%Y-%m-%d").to_string());
+            req = req.query(
+                "date_from",
+                format!("{:04}-{:02}-{:02}", d.year(), u8::from(d.month()), d.day()),
+            );
         }
 
         let mut resp = req.call().map_err(|e| {
@@ -468,8 +471,11 @@ impl GoCardlessClient {
                 .or(item.value_date.as_deref())
                 .unwrap_or("1970-01-01");
 
-            let date = NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
-                .unwrap_or_else(|_| NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
+            let date = NaiveDate::parse(
+                date_str,
+                time::macros::format_description!("[year]-[month]-[day]"),
+            )
+            .unwrap_or(time::macros::date!(1970 - 01 - 01));
 
             let payee_name = item
                 .creditor_name
@@ -481,8 +487,10 @@ impl GoCardlessClient {
                 .or(item.internal_transaction_id)
                 .unwrap_or_else(|| {
                     format!(
-                        "{}_{}_{}",
-                        date.format("%Y%m%d"),
+                        "{:04}{:02}{:02}_{}_{}",
+                        date.year(),
+                        u8::from(date.month()),
+                        date.day(),
                         amount.as_cents(),
                         item.remittance_info.as_deref().unwrap_or("tx")
                     )

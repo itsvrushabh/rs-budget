@@ -23,7 +23,15 @@ use actual_import::{CsvParser, Deduplicator, PayeeCleaner};
 use actual_storage::SqliteStore;
 use actual_sync::merkle::diff as diff_merkle;
 use actual_sync::CrdtTracker;
-use chrono::NaiveDate;
+use time::Date as NaiveDate;
+fn ymd(y: i32, m: u32, d: u32) -> Option<NaiveDate> {
+    NaiveDate::from_calendar_date(
+        y,
+        time::Month::try_from(u8::try_from(m).ok()?).ok()?,
+        u8::try_from(d).ok()?,
+    )
+    .ok()
+}
 use rusqlite::Connection;
 
 #[test]
@@ -94,7 +102,7 @@ fn test_e2e_envelope_budgeting_and_reports_parity() {
         .expect("enable groceries carryover");
 
     // 4. Incur spending
-    let date_nov15 = NaiveDate::from_ymd_opt(2026, 11, 15).unwrap();
+    let date_nov15 = ymd(2026, 11, 15).unwrap();
     service
         .add_transaction(AddTransaction {
             id: "tx-1".into(),
@@ -179,7 +187,7 @@ fn test_e2e_split_transactions_and_transfers_parity() {
         .expect("create home goods");
 
     // 1. Split transaction parity: Parent $100 with $60 and $40 sub-splits
-    let date = NaiveDate::from_ymd_opt(2026, 11, 4).unwrap();
+    let date = ymd(2026, 11, 4).unwrap();
     let mut parent = Transaction::new("tx-parent", &acc_checking, date, Cents(-10000));
     parent.is_parent = true;
 
@@ -217,7 +225,7 @@ fn test_e2e_rules_engine_and_recurring_schedules_parity() {
     assert_eq!(engine.rules().len(), 1);
 
     // Recurring schedule parity
-    let date = NaiveDate::from_ymd_opt(2026, 11, 1).unwrap();
+    let date = ymd(2026, 11, 1).unwrap();
     let config = ScheduleConfig::new(date, Frequency::Monthly);
     let mut schedule = Schedule::new("sched-1", "acc-checking", Cents(-120000), config);
     schedule.name = Some("Rent".to_string());
@@ -250,7 +258,7 @@ fn test_e2e_statement_import_and_deduplication_parity() {
 
     // Deduplication check against existing transactions
     let dedup = Deduplicator::new(3);
-    let date = NaiveDate::from_ymd_opt(2026, 11, 1).unwrap();
+    let date = ymd(2026, 11, 1).unwrap();
     let existing_tx = Transaction::new("tx-existing", "acc-checking", date, Cents(-5420));
     let dedup_result = dedup.deduplicate(imported_txs, &[existing_tx]);
     // One duplicates the existing transaction, one is unique

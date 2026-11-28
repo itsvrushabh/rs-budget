@@ -9,11 +9,11 @@ use axum::http::header::CONTENT_TYPE;
 use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use chrono::Utc;
 use rusqlite::{params, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::fs;
+use time::OffsetDateTime as Utc;
 use uuid::Uuid;
 
 /// Validates file identifiers against directory traversal and malformed inputs.
@@ -102,7 +102,9 @@ pub async fn upload_user_file_handler(
     fs::write(&file_path, &body)?;
 
     // 2. Update files table
-    let now = Utc::now().to_rfc3339();
+    let now = Utc::now_utc()
+        .format(&time::format_description::well_known::Rfc3339)
+        .unwrap_or_default();
     {
         let conn = state
             .db
@@ -256,7 +258,9 @@ pub async fn update_user_filename_handler(
     Json(payload): Json<UpdateFilenamePayload>,
 ) -> Result<Response, ServerError> {
     validate_file_id(&payload.file_id)?;
-    let now = Utc::now().to_rfc3339();
+    let now = Utc::now_utc()
+        .format(&time::format_description::well_known::Rfc3339)
+        .unwrap_or_default();
     let conn = state
         .db
         .lock()
@@ -286,7 +290,9 @@ pub async fn delete_user_file_handler(
     Json(payload): Json<FileIdPayload>,
 ) -> Result<Response, ServerError> {
     validate_file_id(&payload.file_id)?;
-    let now = Utc::now().to_rfc3339();
+    let now = Utc::now_utc()
+        .format(&time::format_description::well_known::Rfc3339)
+        .unwrap_or_default();
     let conn = state
         .db
         .lock()
@@ -310,7 +316,9 @@ pub async fn reset_user_file_handler(
 ) -> Result<Response, ServerError> {
     validate_file_id(&payload.file_id)?;
     let new_group_id = Uuid::new_v4().to_string();
-    let now = Utc::now().to_rfc3339();
+    let now = Utc::now_utc()
+        .format(&time::format_description::well_known::Rfc3339)
+        .unwrap_or_default();
 
     let conn = state
         .db

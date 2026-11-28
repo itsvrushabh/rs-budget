@@ -4,7 +4,15 @@ use actual_api::commands::*;
 use actual_api::service::BudgetService;
 use actual_api::ApiError;
 use actual_core::Cents;
-use chrono::{Datelike, NaiveDate};
+use time::Date as NaiveDate;
+fn ymd(y: i32, m: u32, d: u32) -> Option<NaiveDate> {
+    NaiveDate::from_calendar_date(
+        y,
+        time::Month::try_from(u8::try_from(m).ok()?).ok()?,
+        u8::try_from(d).ok()?,
+    )
+    .ok()
+}
 
 /// Helper to create cents from a dollar integer.
 fn dollars(d: i64) -> Cents {
@@ -125,7 +133,7 @@ fn test_merge_payees() {
     svc.add_transaction(AddTransaction {
         id: "tx-1".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+        date: ymd(2024, 6, 15).unwrap(),
         amount: dollars(-50),
         payee_id: Some("pay-a".into()),
         category_id: None,
@@ -305,7 +313,7 @@ fn test_add_and_read_transaction() {
         .add_transaction(AddTransaction {
             id: "tx-1".into(),
             account_id: "acc-1".into(),
-            date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+            date: ymd(2024, 6, 15).unwrap(),
             amount: dollars(-42),
             payee_id: None,
             category_id: None,
@@ -332,7 +340,7 @@ fn test_update_transaction() {
     svc.add_transaction(AddTransaction {
         id: "tx-1".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+        date: ymd(2024, 6, 15).unwrap(),
         amount: dollars(-42),
         payee_id: None,
         category_id: None,
@@ -368,7 +376,7 @@ fn test_delete_transaction() {
     svc.add_transaction(AddTransaction {
         id: "tx-1".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+        date: ymd(2024, 6, 15).unwrap(),
         amount: dollars(-42),
         payee_id: None,
         category_id: None,
@@ -391,7 +399,7 @@ fn test_transaction_requires_existing_account() {
         .add_transaction(AddTransaction {
             id: "tx-1".into(),
             account_id: "no-acct".into(),
-            date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+            date: ymd(2024, 6, 15).unwrap(),
             amount: dollars(-10),
             payee_id: None,
             category_id: None,
@@ -415,7 +423,7 @@ fn test_transactions_for_account_sorted_desc() {
         svc.add_transaction(AddTransaction {
             id: format!("tx-{day}"),
             account_id: "acc-1".into(),
-            date: NaiveDate::from_ymd_opt(2024, 6, day).unwrap(),
+            date: ymd(2024, 6, day).unwrap(),
             amount: dollars(-10),
             payee_id: None,
             category_id: None,
@@ -444,7 +452,7 @@ fn test_split_transaction() {
     svc.add_transaction(AddTransaction {
         id: "tx-parent".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+        date: ymd(2024, 6, 15).unwrap(),
         amount: dollars(-100),
         payee_id: None,
         category_id: None,
@@ -479,7 +487,7 @@ fn test_split_amount_mismatch() {
     svc.add_transaction(AddTransaction {
         id: "tx-parent".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+        date: ymd(2024, 6, 15).unwrap(),
         amount: dollars(-100),
         payee_id: None,
         category_id: None,
@@ -608,7 +616,7 @@ fn test_undo_delete_transaction() {
     svc.add_transaction(AddTransaction {
         id: "tx-1".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+        date: ymd(2024, 6, 15).unwrap(),
         amount: dollars(-42),
         payee_id: None,
         category_id: None,
@@ -639,7 +647,7 @@ fn test_undo_update_transaction() {
     svc.add_transaction(AddTransaction {
         id: "tx-1".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+        date: ymd(2024, 6, 15).unwrap(),
         amount: dollars(-42),
         payee_id: None,
         category_id: None,
@@ -724,7 +732,7 @@ fn test_undo_merge_payees() {
     svc.add_transaction(AddTransaction {
         id: "tx-1".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 6, 15).unwrap(),
+        date: ymd(2024, 6, 15).unwrap(),
         amount: dollars(-50),
         payee_id: Some("pay-a".into()),
         category_id: None,
@@ -863,7 +871,7 @@ fn test_budget_service_reports() {
     svc.add_transaction(AddTransaction {
         id: "tx-inc".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 7, 1).unwrap(),
+        date: ymd(2024, 7, 1).unwrap(),
         amount: dollars(3000),
         payee_id: None,
         category_id: None,
@@ -876,7 +884,7 @@ fn test_budget_service_reports() {
     svc.add_transaction(AddTransaction {
         id: "tx-exp".into(),
         account_id: "acc-1".into(),
-        date: NaiveDate::from_ymd_opt(2024, 7, 10).unwrap(),
+        date: ymd(2024, 7, 10).unwrap(),
         amount: dollars(-500),
         payee_id: None,
         category_id: Some("cat-1".into()),
@@ -949,7 +957,7 @@ fn test_budget_service_envelope_calculations() {
     svc.add_transaction(AddTransaction {
         id: "tx-groc-1".into(),
         account_id: acc_id,
-        date: NaiveDate::from_ymd_opt(2026, 11, 10).unwrap(),
+        date: ymd(2026, 11, 10).unwrap(),
         amount: dollars(-150),
         payee_id: None,
         category_id: Some(cat_id.clone()),
@@ -1006,7 +1014,7 @@ fn test_transaction_update_and_delete_dag_recalculation() {
     svc.add_transaction(AddTransaction {
         id: "tx-dag-1".into(),
         account_id: acc_id,
-        date: NaiveDate::from_ymd_opt(2026, 11, 12).unwrap(),
+        date: ymd(2026, 11, 12).unwrap(),
         amount: dollars(-50),
         payee_id: None,
         category_id: Some(cat_id.clone()),
@@ -1102,7 +1110,7 @@ fn test_sqlite_persistence_across_service_reopen() {
             .add_transaction(AddTransaction {
                 id: "tx-persist-1".into(),
                 account_id: acc_id,
-                date: NaiveDate::from_ymd_opt(2026, 11, 15).unwrap(),
+                date: ymd(2026, 11, 15).unwrap(),
                 amount: dollars(-5),
                 payee_id: Some(payee_id.clone()),
                 category_id: Some(cat_id.clone()),

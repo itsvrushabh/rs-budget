@@ -3,7 +3,7 @@
 //! Each variant carries every field required to perform and later undo the operation.
 
 use actual_core::{Cents, Transaction};
-use chrono::NaiveDate;
+use time::Date as NaiveDate;
 
 // ─── Account commands ──────────────────────────────────────────────────────────
 

@@ -97,7 +97,7 @@ impl MobileApp {
             .clone()
             .unwrap_or_else(|| "acc-default".to_string());
 
-        let date = chrono::NaiveDate::from_ymd_opt(2026, 11, 4).unwrap_or_default();
+        let date = time::macros::date!(2026 - 11 - 04);
         let mut tx = Transaction::new(
             format!("tx-{}", self.transactions.len() + 1),
             account_id,

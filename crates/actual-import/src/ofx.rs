@@ -4,8 +4,8 @@
 //! extracting transactions (`STMTTRN`), dates (`DTPOSTED`), amounts (`TRNAMT`),
 //! unique identifiers (`FITID`), payees (`NAME`), and memos (`MEMO`).
 
-use chrono::NaiveDate;
 use regex::Regex;
+use time::Date as NaiveDate;
 
 use crate::cleaner::PayeeCleaner;
 use crate::error::ImportError;
@@ -134,7 +134,10 @@ pub fn parse_ofx_date(s: &str) -> Result<NaiveDate, ImportError> {
 
     // Check ISO format YYYY-MM-DD
     if clean.len() >= 10 && &clean[4..5] == "-" && &clean[7..8] == "-" {
-        if let Ok(d) = NaiveDate::parse_from_str(&clean[..10], "%Y-%m-%d") {
+        if let Ok(d) = NaiveDate::parse(
+            &clean[..10],
+            time::macros::format_description!("[year]-[month]-[day]"),
+        ) {
             return Ok(d);
         }
     }
@@ -142,7 +145,9 @@ pub fn parse_ofx_date(s: &str) -> Result<NaiveDate, ImportError> {
     // Standard OFX format: YYYYMMDD...
     if clean.len() >= 8 {
         let ymd = &clean[..8];
-        if let Ok(d) = NaiveDate::parse_from_str(ymd, "%Y%m%d") {
+        if let Ok(d) =
+            NaiveDate::parse(ymd, time::macros::format_description!("[year][month][day]"))
+        {
             return Ok(d);
         }
     }

@@ -55,8 +55,9 @@ impl DesktopApp {
         let tracker = CrdtTracker::load_from_sqlite(service.store().conn()).unwrap_or_default();
         let bridge = GuiBridge::new(service);
 
-        let now = chrono::Local::now();
-        let month_str = now.format("%Y-%m").to_string();
+        let now =
+            time::OffsetDateTime::now_local().unwrap_or_else(|_| time::OffsetDateTime::now_utc());
+        let month_str = format!("{:04}-{:02}", now.year(), u8::from(now.month()));
 
         let mut app = Self {
             budget_path: None,
@@ -85,8 +86,9 @@ impl DesktopApp {
         let tracker = CrdtTracker::load_from_sqlite(service.store().conn()).unwrap_or_default();
         let bridge = GuiBridge::new(service);
 
-        let now = chrono::Local::now();
-        let month_str = now.format("%Y-%m").to_string();
+        let now =
+            time::OffsetDateTime::now_local().unwrap_or_else(|_| time::OffsetDateTime::now_utc());
+        let month_str = format!("{:04}-{:02}", now.year(), u8::from(now.month()));
 
         let mut app = Self {
             budget_path: Some(path),
